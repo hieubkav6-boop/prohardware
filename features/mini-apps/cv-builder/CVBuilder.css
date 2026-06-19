@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-vietnam: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif);
+  --font-inter: 'Inter', sans-serif;
+  --font-quicksand: 'Quicksand', sans-serif;
+  --font-opensans: 'Open Sans', sans-serif;
+  --font-manrope: 'Manrope', sans-serif;
+}
+
+/* Font classes */
+.font-vietnam { font-family: var(--font-vietnam), 'Be Vietnam Pro', sans-serif; }
+.font-inter { font-family: var(--font-inter), 'Inter', sans-serif; }
+.font-roboto { font-family: var(--font-roboto), 'Roboto', sans-serif; }
+.font-montserrat { font-family: var(--font-montserrat), 'Montserrat', sans-serif; }
+.font-nunito { font-family: var(--font-nunito), 'Nunito', sans-serif; }
+.font-quicksand { font-family: var(--font-quicksand), 'Quicksand', sans-serif; }
+.font-opensans { font-family: var(--font-opensans), 'Open Sans', sans-serif; }
+.font-manrope { font-family: var(--font-manrope), 'Manrope', sans-serif; }
+.font-lora { font-family: var(--font-lora), 'Lora', serif; }
+.font-merriweather { font-family: var(--font-merriweather), 'Merriweather', serif; }
+
+/* Custom scrollbar for editor panel */
+.cv-custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.cv-custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cv-custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.cv-custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* A4 Page layout styles for preview */
+.a4-page {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  position: relative;
+  background: white;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Aspect ratios for live preview - optimized margins for Vietnamese documents */
+.a4-portrait {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 12mm;
+}
+
+.a4-landscape {
+  width: 297mm;
+  min-height: 210mm;
+  padding: 10mm 12mm;
+}
+
+/* Print CSS Styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+    min-height: auto !important;
+  }
+
+  /* Hide UI elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset layout for print */
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .a4-page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    background: white !important;
+  }
+
+  /* Force background colors and colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Prevent elements breaking awkwardly across pages */
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+/* Print Orientation Settings */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  .landscape-print-page {
+    page-break-before: always;
+  }
+}
