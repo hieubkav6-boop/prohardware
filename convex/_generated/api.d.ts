@@ -18,6 +18,7 @@ import type * as attributeTerms from "../attributeTerms.js";
 import type * as auth from "../auth.js";
 import type * as bookings from "../bookings.js";
 import type * as cart from "../cart.js";
+import type * as catalogs from "../catalogs.js";
 import type * as comments from "../comments.js";
 import type * as contactInbox from "../contactInbox.js";
 import type * as convexDashboard from "../convexDashboard.js";
@@ -130,6 +131,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   bookings: typeof bookings;
   cart: typeof cart;
+  catalogs: typeof catalogs;
   comments: typeof comments;
   contactInbox: typeof contactInbox;
   convexDashboard: typeof convexDashboard;

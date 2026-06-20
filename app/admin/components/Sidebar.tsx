@@ -8,7 +8,7 @@ import { useQuery } from 'convex/react';
 import { 
   Bell, Briefcase, CalendarDays, ChevronRight, ChevronsLeft, GraduationCap,
   ChevronsRight, FileText, Globe, Image as ImageIcon, Inbox, LayoutDashboard, LayoutGrid, Loader2,
-  LogOut, Settings, ShoppingCart, Ticket, User, Users, X
+  LogOut, Settings, ShoppingCart, Ticket, User, Users, X, BookOpen
 } from 'lucide-react';
 import { cn } from './ui';
 import { api } from '@/convex/_generated/api';
@@ -214,6 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const showCoursesSection = isModuleEnabled('courses');
   const showResourcesSection = isModuleEnabled('resources');
   const showProjectsSection = isModuleEnabled('projects');
+  const showCatalogsSection = isModuleEnabled('catalogs');
   const showServicesSection = isModuleEnabled('services');
   const showBookingsSection = isModuleEnabled('bookings');
   const showCommerceSection = isModuleEnabled('products') || isModuleEnabled('customers') || isModuleEnabled('orders') || isModuleEnabled('wishlist');
@@ -232,7 +233,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const productTypesEnabled = Boolean(productSettings?.find(setting => setting.settingKey === 'enableProductTypes')?.value);
 
   const analyticsSectionItemCount = showAnalyticsSection ? 1 : 0;
-  const contentSectionItemCount = Number(showPostsSection) + Number(showCoursesSection) + Number(showResourcesSection) + Number(showProjectsSection) + Number(showServicesSection);
+  const contentSectionItemCount = Number(showPostsSection) + Number(showCoursesSection) + Number(showResourcesSection) + Number(showProjectsSection) + Number(showCatalogsSection) + Number(showServicesSection);
   const commerceSectionItemCount = showCommerceSection ? 1 : 0;
   const mediaSectionItemCount = showMediaSection ? 1 : 0;
   const marketingSectionItemCount = Number(showNotificationsSection) + Number(showPromotionsSection);
@@ -455,6 +456,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                     { href: '/admin/projects', label: 'Tất cả dự án', moduleKey: 'projects' },
                     { href: '/admin/project-categories', label: 'Danh mục dự án', moduleKey: 'projects' },
                   ]}
+                />
+              </div>
+            )}
+
+            {/* Catalogs Section */}
+            {showCatalogsSection && (
+              <div className={getSectionClassName(showContentTitle)}>
+                {!showPostsSection && !showCoursesSection && !showResourcesSection && !showProjectsSection && showContentTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nội dung</div>}
+                <SidebarItem
+                  icon={BookOpen}
+                  label="Catalog"
+                  href="/admin/catalogs"
+                  active={isActive('/admin/catalogs')}
+                  isCollapsed={isSidebarCollapsed}
+                  isExpanded={currentExpandedMenu === 'Catalog'}
+                  onToggle={() =>{  handleMenuToggle('Catalog'); }}
+                  pathname={pathname}
+                  isModuleEnabled={isModuleEnabled}
                 />
               </div>
             )}

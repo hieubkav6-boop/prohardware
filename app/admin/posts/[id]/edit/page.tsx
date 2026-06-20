@@ -69,6 +69,8 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSnapshotReady, setIsSnapshotReady] = useState(false);
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
+
   const selectedCategorySlug = useMemo(
     () => categoriesData?.find((category) => category._id === categoryId)?.slug,
     [categoriesData, categoryId]
@@ -134,7 +136,7 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
   const hasChanges = useMemo(() => {
     if (!isSnapshotReady || !initialSnapshotRef.current) {return false;}
     return JSON.stringify(initialSnapshotRef.current) !== JSON.stringify(currentSnapshot);
-  }, [currentSnapshot, isSnapshotReady]);
+  }, [currentSnapshot, isSnapshotReady, snapshotVersion]);
 
   useEffect(() => {
     if (saveStatus === 'saving') {return;}
@@ -242,6 +244,7 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
     if (isDataLoaded && !isSnapshotReady) {
       initialSnapshotRef.current = currentSnapshot;
       setIsSnapshotReady(true);
+      setSnapshotVersion((prev) => prev + 1);
     }
   }, [isDataLoaded, isSnapshotReady, currentSnapshot]);
 
@@ -313,6 +316,7 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
         setMetaDescription(resolvedMetaDescriptionValue);
       }
       initialSnapshotRef.current = persistedSnapshot;
+      setSnapshotVersion((prev) => prev + 1);
       setSaveStatus('saved');
       toast.success("Cập nhật bài viết thành công");
     } catch (error) {

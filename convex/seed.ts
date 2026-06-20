@@ -2831,6 +2831,29 @@ export const addBookingsModuleToList = mutation({
   returns: v.null(),
 });
 
+// Thêm module catalogs vào danh sách adminModules (chỉ chạy 1 lần)
+export const addCatalogsModuleToList = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db.query("adminModules").withIndex("by_key", q => q.eq("key", "catalogs")).first();
+    if (existing) {
+      return null;
+    }
+    await ctx.db.insert("adminModules", {
+      category: "content" as const,
+      description: "Tài liệu catalog PDF dạng flipbook",
+      enabled: true,
+      icon: "BookOpen",
+      isCore: false,
+      key: "catalogs",
+      name: "Catalog",
+      order: 23,
+    });
+    return null;
+  },
+  returns: v.null(),
+});
+
 export const seedServicesModule = mutation({
   args: { configOnly: v.optional(v.boolean()) },
   handler: async (ctx, args) => {

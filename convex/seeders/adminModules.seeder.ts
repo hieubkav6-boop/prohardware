@@ -48,6 +48,7 @@ export class AdminModulesSeeder extends BaseSeeder<AdminModuleData> {
       { category: 'content', description: 'Quản lý khóa học, danh mục và nội dung học', enabled: true, icon: 'GraduationCap', isCore: false, key: 'courses', name: 'Khóa học', order: 20 },
       { category: 'content', description: 'Quản lý tài nguyên, danh mục, link tải và quyền truy cập', enabled: true, icon: 'FileText', isCore: false, key: 'resources', name: 'Tài nguyên', order: 21 },
       { category: 'system', description: 'Nền tảng Mini App để tách thử nghiệm khỏi hệ thống lõi', enabled: true, icon: 'PanelsTopLeft', isCore: false, key: 'miniApps', name: 'Mini Apps', order: 22 },
+      { category: 'content', description: 'Tài liệu catalog PDF dạng flipbook', enabled: true, icon: 'BookOpen', isCore: false, key: 'catalogs', name: 'Catalog', order: 23 },
       { category: 'system', description: 'Quản lý gia hạn subscription khách hàng', enabled: true, icon: 'CalendarDays', isCore: false, key: 'subscriptions', name: 'Subscriptions', order: 23 },
     ];
 

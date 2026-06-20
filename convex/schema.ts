@@ -1989,5 +1989,45 @@ export default defineSchema({
     .index("by_filter", ["filterId"])
     .index("by_resource_filter", ["resourceId", "filterId"])
     .index("by_resource_value", ["resourceId", "valueId"]),
+
+  // ============================================================
+  // CATALOGS
+  // ============================================================
+  catalogs: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    description: v.optional(v.string()),
+
+    // PDF Storage (kế thừa từ Ca-Mau-DST-Digital-Library)
+    pdfStorageId: v.id("_storage"),
+    pageImages: v.optional(v.array(
+      v.union(v.id("_storage"), v.null())
+    )),
+    totalPages: v.optional(v.number()),
+
+    // Display
+    thumbnail: v.optional(v.string()),
+    thumbnailStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+
+    // Standard content module fields
+    status: v.union(
+      v.literal("Published"),
+      v.literal("Draft"),
+      v.literal("Archived")
+    ),
+    views: v.number(),
+    publishedAt: v.optional(v.number()),
+    order: v.number(),
+    featured: v.optional(v.boolean()),
+
+    // SEO
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status_order", ["status", "order"])
+    .index("by_status_publishedAt", ["status", "publishedAt"])
+    .index("by_status_featured", ["status", "featured"])
+    .searchIndex("search_title", { filterFields: ["status"], searchField: "title" }),
 });
 
