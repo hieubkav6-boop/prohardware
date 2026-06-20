@@ -1,0 +1,255 @@
+{
+  "generatedAt": "2026-06-18T20:18:54.178Z",
+  "logFile": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions\\.vietadmin-upgrade-runs\\2026-06-18T20-17-23-034Z\\run.log",
+  "failed": true,
+  "error": "Command failed: bunx tsc --noEmit",
+  "events": [
+    {
+      "time": "2026-06-18T20:17:23.038Z",
+      "level": "INFO",
+      "message": "Log directory: E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions\\.vietadmin-upgrade-runs\\2026-06-18T20-17-23-034Z"
+    },
+    {
+      "time": "2026-06-18T20:17:23.044Z",
+      "level": "INFO",
+      "message": "VietAdmin upgrade started",
+      "data": {
+        "core": "E:\\NextJS\\study\\admin-ui-aistudio\\system-vietadmin-nextjs",
+        "target": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions",
+        "branch": "master",
+        "phase": "full",
+        "config": null,
+        "scanFunction": null,
+        "commitMessage": "chore: sync pokemon_champions from system-vietadmin-nextjs master at 2026-06-19 03:17"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:23.046Z",
+      "level": "COMMAND",
+      "message": "git rev-parse --show-toplevel",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:23.861Z",
+      "level": "EXIT",
+      "message": "code 1"
+    },
+    {
+      "time": "2026-06-18T20:17:23.862Z",
+      "level": "INFO",
+      "message": "Target is not a git repository. Initializing git repository."
+    },
+    {
+      "time": "2026-06-18T20:17:23.863Z",
+      "level": "COMMAND",
+      "message": "git init",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:24.619Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:17:24.620Z",
+      "level": "COMMAND",
+      "message": "git status --porcelain",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:25.363Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:17:25.365Z",
+      "level": "INFO",
+      "message": "Ignoring viet-up runtime files during clean check.",
+      "data": {
+        "ignored": [
+          "?? .vietadmin-upgrade-runs/"
+        ]
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:25.367Z",
+      "level": "WARN",
+      "message": "No vietadmin-upgrade config found. Data phase will run only if CLI flags provide enough detail."
+    },
+    {
+      "time": "2026-06-18T20:17:25.368Z",
+      "level": "INFO",
+      "message": "Starting Phase 1: sync code from core"
+    },
+    {
+      "time": "2026-06-18T20:17:25.369Z",
+      "level": "COMMAND",
+      "message": "git remote",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:26.258Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:17:26.259Z",
+      "level": "COMMAND",
+      "message": "git remote add core-update 'E:\\NextJS\\study\\admin-ui-aistudio\\system-vietadmin-nextjs'",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:26.941Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:17:26.941Z",
+      "level": "COMMAND",
+      "message": "git fetch core-update",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:56.384Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:17:56.386Z",
+      "level": "COMMAND",
+      "message": "git rev-parse --short core-update/master",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:57.091Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:17:57.092Z",
+      "level": "COMMAND",
+      "message": "git rev-parse --verify HEAD",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:57.776Z",
+      "level": "EXIT",
+      "message": "code 1"
+    },
+    {
+      "time": "2026-06-18T20:17:57.777Z",
+      "level": "INFO",
+      "message": "Sync endpoints",
+      "data": {
+        "targetHead": null,
+        "coreHead": "6ce30da3",
+        "coreRef": "core-update/master"
+      }
+    },
+    {
+      "time": "2026-06-18T20:17:57.777Z",
+      "level": "INFO",
+      "message": "Target has no HEAD yet. Treating sync as initial import."
+    },
+    {
+      "time": "2026-06-18T20:17:57.778Z",
+      "level": "INFO",
+      "message": "Replacing tracked target tree with core tree. Untracked files are preserved."
+    },
+    {
+      "time": "2026-06-18T20:17:57.778Z",
+      "level": "COMMAND",
+      "message": "git read-tree --reset -u core-update/master",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:18:05.541Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:18:05.542Z",
+      "level": "COMMAND",
+      "message": "git diff --cached --shortstat",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:18:08.198Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:18:08.199Z",
+      "level": "INFO",
+      "message": "Running pre-commit validators"
+    },
+    {
+      "time": "2026-06-18T20:18:08.200Z",
+      "level": "COMMAND",
+      "message": "bunx tsc --noEmit",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:18:52.569Z",
+      "level": "EXIT",
+      "message": "code 1"
+    },
+    {
+      "time": "2026-06-18T20:18:52.570Z",
+      "level": "COMMAND",
+      "message": "git remote",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:18:53.387Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:18:53.388Z",
+      "level": "COMMAND",
+      "message": "git remote remove core-update",
+      "data": {
+        "cwd": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions"
+      }
+    },
+    {
+      "time": "2026-06-18T20:18:54.177Z",
+      "level": "EXIT",
+      "message": "code 0"
+    },
+    {
+      "time": "2026-06-18T20:18:54.177Z",
+      "level": "BLOCKED",
+      "message": "Command failed: bunx tsc --noEmit",
+      "data": {
+        "logFile": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions\\.vietadmin-upgrade-runs\\2026-06-18T20-17-23-034Z\\run.log",
+        "reportFile": "E:\\NextJS\\job\\job_from_system_vietadmin\\pokemon_champions\\.vietadmin-upgrade-runs\\2026-06-18T20-17-23-034Z\\evidence.json"
+      }
+    }
+  ]
+}

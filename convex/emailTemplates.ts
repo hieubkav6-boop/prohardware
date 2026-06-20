@@ -54,6 +54,23 @@ const formatSiteUrl = (siteUrl: string) => {
   return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
 };
 
+const escapeHtml = (value: string | undefined | null) =>
+  (value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
+const contactTypeLabels: Record<Doc<"pokemonChampionsOrders">["contactType"], string> = {
+  discord: "Discord",
+  whatsapp: "WhatsApp",
+  instagram: "Instagram",
+  zalo: "Zalo",
+  phone: "Phone",
+  other: "Khác",
+};
+
 export function getOrderPlacedCustomerTemplate(order: Doc<"orders">, siteUrl: string, brandName: string = "YourBrand"): string {
   const itemsHtml = order.items
     .map(
@@ -221,6 +238,48 @@ export function getOrderPlacedShopTemplate(order: Doc<"orders">, customer: Doc<"
 
       <div style="text-align: center; margin-bottom: 24px;">
         <a href="${formatSiteUrl(siteUrl)}/admin/orders/${order._id}/edit" style="display: inline-block; background-color: #ef4444; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 12px 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);">Xem và Xử lý trên Admin Panel</a>
+      </div>
+    </div>
+  `;
+}
+
+export function getPokemonChampionsOrderShopTemplate(
+  order: Doc<"pokemonChampionsOrders">,
+  customer: Doc<"pokemonChampionsCustomers">,
+  pokemon: Doc<"pokemonChampionsPokemon"> | null,
+  gameItem: Doc<"pokemonChampionsGameItems"> | null,
+  siteUrl: string,
+  _brandName: string = "YourBrand"
+): string {
+  const pokemonName = pokemon ? escapeHtml(pokemon.name) : "Không chọn";
+  const gameItemName = gameItem ? escapeHtml(gameItem.name) : "Không chọn";
+  const adminUrl = `${formatSiteUrl(siteUrl)}/admin/mini-apps/pokemon-champions`;
+
+  return `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+      <div style="text-align: center; margin-bottom: 24px; border-bottom: 2px solid #ef4444; padding-bottom: 16px;">
+        <h1 style="color: #ef4444; margin: 0; font-size: 24px; font-weight: 800;">POKÉMON CHAMPIONS ORDER MỚI</h1>
+        <p style="color: #64748b; margin: 4px 0 0 0; font-size: 14px;">Mã đơn: #${escapeHtml(order.orderNumber)}</p>
+      </div>
+
+      <div style="background-color: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+        <h3 style="color: #475569; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0; margin-bottom: 12px;">Khách hàng</h3>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Họ tên:</strong> ${escapeHtml(customer.name)}</p>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Kênh liên hệ:</strong> ${contactTypeLabels[order.contactType]}</p>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Thông tin liên hệ:</strong> ${escapeHtml(order.contactHandle)}</p>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Ghi chú:</strong> ${order.note ? escapeHtml(order.note) : "Không có"}</p>
+      </div>
+
+      <div style="background-color: #fff7ed; border-radius: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid #fed7aa;">
+        <h3 style="color: #9a3412; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0; margin-bottom: 12px;">Chi tiết quick order</h3>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Pokémon:</strong> ${pokemonName}</p>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Item:</strong> ${gameItemName}</p>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Số lượng:</strong> ${order.quantity}</p>
+        <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Trạng thái:</strong> New</p>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${adminUrl}" style="display: inline-block; background-color: #ef4444; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 12px 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);">Mở Pokémon Champions Admin</a>
       </div>
     </div>
   `;

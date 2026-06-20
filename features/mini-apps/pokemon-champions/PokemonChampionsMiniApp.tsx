@@ -1921,12 +1921,16 @@ function PokemonCrud({ gameItems, pokemon }: { gameItems: GameItem[]; pokemon: P
         {paginatedPokemon.map((item) => (
           <Card key={item._id}>
             <CardContent className={cn("flex gap-3 p-4", cols === 5 ? "p-3 gap-2" : "")}>
-              <img
-                src={item.imageUrl}
+              <PokemonThumb
+                imageUrl={item.imageUrl}
+                name={item.name}
                 alt={item.name}
                 className={cn(
                   "rounded-xl bg-slate-100 object-contain dark:bg-slate-800 shrink-0",
                   cols === 5 ? "h-14 w-14 p-1" : "h-20 w-20 p-2"
+                )}
+                fallbackClassName={cn(
+                  cols === 5 ? "h-14 w-14 text-[11px]" : "h-20 w-20 text-xs"
                 )}
               />
               <div className="min-w-0 flex-1 flex flex-col justify-between">

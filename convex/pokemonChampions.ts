@@ -1,12 +1,14 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
-import { api } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
+import { api, internal } from "./_generated/api";
 import {
   POKEMON_CHAMPIONS_DEFAULT_POKEMON,
   POKEMON_CHAMPIONS_DEFAULT_TOTAL,
 } from "./lib/pokemonChampionsDefaults";
+import { EMAIL_CONFIG_SETTING_KEYS, getEmailConfigurationStatus } from "../lib/email-config-status";
+import { getPokemonChampionsOrderShopTemplate } from "./emailTemplates";
 
 const contactTypeValidator = v.union(
   v.literal("discord"),
@@ -222,6 +224,73 @@ async function getSettingsDoc(ctx: QueryCtx | MutationCtx) {
     .query("pokemonChampionsSettings")
     .withIndex("by_key", (q) => q.eq("key", DEFAULT_KEY))
     .unique();
+}
+
+async function getGlobalSettingsByKeys(ctx: MutationCtx, keys: string[]) {
+  const uniqueKeys = [...new Set(keys)];
+  const settings = await Promise.all(uniqueKeys.map((key) =>
+    ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .unique()
+  ));
+
+  const result: Record<string, unknown> = {};
+  for (const setting of settings) {
+    if (setting) {
+      result[setting.key] = setting.value;
+    }
+  }
+  return result;
+}
+
+async function resolveOrderNotificationEmails(ctx: MutationCtx): Promise<string> {
+  const settings = await getGlobalSettingsByKeys(ctx, ["order_notification_emails", "contact_email"]);
+  const advancedEmails = typeof settings.order_notification_emails === "string" ? settings.order_notification_emails : "";
+  if (advancedEmails.trim()) {
+    return advancedEmails;
+  }
+  return typeof settings.contact_email === "string" ? settings.contact_email : "";
+}
+
+async function schedulePokemonChampionsOrderEmail(
+  ctx: MutationCtx,
+  order: Doc<"pokemonChampionsOrders">,
+  customer: Doc<"pokemonChampionsCustomers">
+) {
+  const settings = await getGlobalSettingsByKeys(ctx, [
+    "site_url",
+    "site_name",
+    ...EMAIL_CONFIG_SETTING_KEYS,
+  ]);
+  const emailStatus = getEmailConfigurationStatus(settings);
+  if (!emailStatus.configured) {
+    return;
+  }
+
+  const shopEmails = await resolveOrderNotificationEmails(ctx);
+  if (!shopEmails.trim()) {
+    return;
+  }
+
+  const [pokemon, gameItem] = await Promise.all([
+    order.pokemonId ? ctx.db.get(order.pokemonId) : Promise.resolve(null),
+    order.gameItemId ? ctx.db.get(order.gameItemId) : Promise.resolve(null),
+  ]);
+  const siteUrl = typeof settings.site_url === "string" && settings.site_url.trim()
+    ? settings.site_url.trim()
+    : "http://localhost:3000";
+  const brandName = typeof settings.site_name === "string" && settings.site_name.trim()
+    ? settings.site_name.trim()
+    : "YourBrand";
+  const html = getPokemonChampionsOrderShopTemplate(order, customer, pokemon, gameItem, siteUrl, brandName);
+
+  await ctx.scheduler.runAfter(0, internal.email.sendTransactionalEmail, {
+    to: shopEmails,
+    subject: `[${brandName}] Pokémon Champions order mới #${order.orderNumber}`,
+    html,
+    eventType: "pokemon_champions_order_placed_shop",
+  });
 }
 
 async function syncDefaultPokemon(ctx: MutationCtx, now: number, resetExtras: boolean) {
@@ -804,6 +873,14 @@ export const createOrder = mutation({
       orderCount: customer.orderCount + 1,
       updatedAt: now,
     });
+
+    const [orderDoc, customerDoc] = await Promise.all([
+      ctx.db.get(orderId),
+      ctx.db.get(customer._id),
+    ]);
+    if (orderDoc && customerDoc) {
+      await schedulePokemonChampionsOrderEmail(ctx, orderDoc, customerDoc);
+    }
 
     return orderId;
   },

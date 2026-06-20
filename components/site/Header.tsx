@@ -1601,7 +1601,9 @@ export function Header({
                 </div>
               )}
               {config.showDarkModeToggle && (
-                <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} />
+                <div className="hidden lg:block">
+                  <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} />
+                </div>
               )}
               {showCart && (
                 <CartIcon variant="mobile" className="hidden lg:flex" tokens={navbarActionTokens} />

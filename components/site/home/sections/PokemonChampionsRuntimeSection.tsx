@@ -780,10 +780,12 @@ export function PokemonChampionsRuntimeSection({
                                 isList ? 'h-20 w-20' : isCompact ? 'h-24 w-full' : 'h-36 w-full'
                               )}
                             >
-                              <img
-                                src={item.imageUrl}
+                              <PokemonThumb
+                                imageUrl={item.imageUrl}
+                                name={item.name}
                                 alt={item.name}
                                 className="h-full w-full object-contain p-3 transition duration-200 group-hover:scale-105"
+                                fallbackClassName="h-full w-full p-3 text-xs transition duration-200 group-hover:scale-105"
                               />
                             </div>
                             <div className={cn('flex flex-col flex-1 min-w-0', !isList && 'mt-4')}>
