@@ -19,6 +19,7 @@ import { SeoBuilderDialog } from './SeoBuilderDialog';
 import { ProductSupplementalContentManager } from './ProductSupplementalContentManager';
 import { ShopConfigAdminContainer } from '@/components/modules/orders/ShopConfigAdminContainer';
 import { getEmailConfigurationStatus } from '@/lib/email-config-status';
+import { FONT_REGISTRY, resolveFontVariable } from '@/lib/fonts/registry';
 
 type SettingsSection = 'site' | 'contact' | 'seo' | 'advanced';
 type SettingsFormValue = string | boolean;
@@ -508,6 +509,15 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       if (values.product_watermark_text_repeat === undefined) {
         values.product_watermark_text_repeat = false;
       }
+      if (values.product_watermark_text_vertical_repeat === undefined) {
+        values.product_watermark_text_vertical_repeat = false;
+      }
+      if (values.product_watermark_text_font === undefined) {
+        values.product_watermark_text_font = 'be-vietnam-pro';
+      }
+      if (values.product_watermark_text_line_gap === undefined) {
+        values.product_watermark_text_line_gap = '30';
+      }
       EMAIL_SETTING_KEYS.forEach((key) => {
         if (values[key] === undefined) {
           if (key === 'mail_from_name') {
@@ -836,6 +846,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
         'product_watermark_text_color',
         'product_watermark_text_opacity',
         'product_watermark_text_repeat',
+        'product_watermark_text_vertical_repeat',
+        'product_watermark_text_font',
+        'product_watermark_text_line_gap',
       ];
       watermarkKeys.forEach((key) => {
         if (!settingsToSave.some((item) => item.key === key)) {
@@ -844,7 +857,8 @@ function SettingsContent({ section }: { section: SettingsSection }) {
             key === 'enable_product_watermark' ||
             key === 'product_watermark_image_enabled' ||
             key === 'product_watermark_text_enabled' ||
-            key === 'product_watermark_text_repeat'
+            key === 'product_watermark_text_repeat' ||
+            key === 'product_watermark_text_vertical_repeat'
           ) {
             value = form[key] === true || form[key] === 'true';
           }
@@ -1824,6 +1838,19 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-1.5">
+                                    <Label>Font chữ</Label>
+                                    <select
+                                      value={String(form.product_watermark_text_font ?? 'be-vietnam-pro')}
+                                      onChange={(e) => updateField('product_watermark_text_font', e.target.value)}
+                                      className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                    >
+                                      {FONT_REGISTRY.map((font) => (
+                                        <option key={font.key} value={font.key}>{font.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div className="space-y-1.5">
                                     <Label>Cỡ chữ (px)</Label>
                                     <select
                                       value={String(form.product_watermark_text_font_size ?? '8')}
@@ -1835,8 +1862,10 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                                       ))}
                                     </select>
                                   </div>
+                                </div>
 
-                                  <div className="space-y-1.5">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1.5 col-span-2">
                                     <Label>Màu chữ</Label>
                                     <div className="flex gap-2">
                                       <input
@@ -1870,13 +1899,41 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                                   />
                                 </div>
 
-                                <div className="flex items-center gap-3">
-                                  <Checkbox
-                                    id="product_watermark_text_repeat"
-                                    checked={form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true'}
-                                    onCheckedChange={(checked) => updateField('product_watermark_text_repeat', checked)}
-                                  />
-                                  <Label htmlFor="product_watermark_text_repeat" className="cursor-pointer text-xs text-slate-600 dark:text-slate-400">Lặp watermark chữ theo hàng ngang</Label>
+                                {(form.product_watermark_text_vertical_repeat === true || form.product_watermark_text_vertical_repeat === 'true') && (
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between text-xs text-slate-500">
+                                      <Label>Độ giãn hàng dọc (line gap)</Label>
+                                      <span>{form.product_watermark_text_line_gap ?? 30}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="10"
+                                      max="80"
+                                      value={parseFloat(String(form.product_watermark_text_line_gap ?? 30))}
+                                      onChange={(e) => updateField('product_watermark_text_line_gap', e.target.value)}
+                                      className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-orange-500"
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="flex flex-col gap-2 pt-1">
+                                  <div className="flex items-center gap-3">
+                                    <Checkbox
+                                      id="product_watermark_text_repeat"
+                                      checked={form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true'}
+                                      onCheckedChange={(checked) => updateField('product_watermark_text_repeat', checked)}
+                                    />
+                                    <Label htmlFor="product_watermark_text_repeat" className="cursor-pointer text-xs text-slate-600 dark:text-slate-400">Lặp watermark chữ theo hàng ngang</Label>
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                                    <Checkbox
+                                      id="product_watermark_text_vertical_repeat"
+                                      checked={form.product_watermark_text_vertical_repeat === true || form.product_watermark_text_vertical_repeat === 'true'}
+                                      onCheckedChange={(checked) => updateField('product_watermark_text_vertical_repeat', checked)}
+                                    />
+                                    <Label htmlFor="product_watermark_text_vertical_repeat" className="cursor-pointer text-xs text-slate-600 dark:text-slate-400">Lặp watermark chữ theo hàng dọc</Label>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1935,30 +1992,73 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
                               {/* Watermark chữ */}
                               {(form.product_watermark_text_enabled === true || form.product_watermark_text_enabled === 'true') && typeof form.product_watermark_text_content === 'string' && form.product_watermark_text_content && (
-                                <div
-                                  className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none pointer-events-auto hover:bg-orange-500/10 border-y border-dashed border-transparent hover:border-orange-500 py-1 touch-none"
-                                  style={{
-                                    top: `${form.product_watermark_text_y ?? 80}%`,
-                                    opacity: (parseFloat(String(form.product_watermark_text_opacity ?? 35))) / 100,
-                                    color: String(form.product_watermark_text_color ?? '#64748B'),
-                                    fontSize: `${form.product_watermark_text_font_size ?? 8}px`,
-                                    fontFamily: '"Be Vietnam Pro", sans-serif',
-                                    cursor: 'ns-resize',
-                                  }}
-                                  onPointerDown={(e) => handlePreviewPointerDown(e, 'text-move')}
-                                  onPointerMove={handlePreviewPointerMove}
-                                  onPointerUp={handlePreviewPointerUp}
-                                >
-                                  {form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true' ? (
-                                    <div className="w-full overflow-hidden inline-flex justify-center gap-4">
-                                      {Array(8).fill(null).map((_, i) => (
-                                        <span key={i}>{form.product_watermark_text_content as string}</span>
-                                      ))}
-                                    </div>
+                                <>
+                                  {form.product_watermark_text_vertical_repeat === true || form.product_watermark_text_vertical_repeat === 'true' ? (
+                                    Array.from({ length: 21 }, (_, index) => {
+                                      const i = index - 10;
+                                      const startY = parseFloat(String(form.product_watermark_text_y ?? 80));
+                                      const lineGap = parseFloat(String(form.product_watermark_text_line_gap ?? 30));
+                                      const topVal = startY + i * lineGap;
+                                      if (topVal < -20 || topVal > 120) return null;
+                                      const isMain = i === 0;
+                                      return (
+                                        <div
+                                          key={i}
+                                          className={cn(
+                                            "absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none py-1 touch-none",
+                                            isMain ? "pointer-events-auto hover:bg-orange-500/10 border-y border-dashed border-transparent hover:border-orange-500" : "pointer-events-none"
+                                          )}
+                                          style={{
+                                            top: `${topVal}%`,
+                                            opacity: (parseFloat(String(form.product_watermark_text_opacity ?? 35))) / 100,
+                                            color: String(form.product_watermark_text_color ?? '#64748B'),
+                                            fontSize: `${form.product_watermark_text_font_size ?? 8}px`,
+                                            fontFamily: `var(${resolveFontVariable(String(form.product_watermark_text_font || 'be-vietnam-pro'))}), sans-serif`,
+                                            cursor: isMain ? 'ns-resize' : 'default',
+                                          }}
+                                          onPointerDown={isMain ? (e) => handlePreviewPointerDown(e, 'text-move') : undefined}
+                                          onPointerMove={isMain ? handlePreviewPointerMove : undefined}
+                                          onPointerUp={isMain ? handlePreviewPointerUp : undefined}
+                                        >
+                                          {form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true' ? (
+                                            <div className="w-full overflow-hidden inline-flex justify-center gap-4">
+                                              {Array(8).fill(null).map((_, idx) => (
+                                                <span key={idx}>{form.product_watermark_text_content as string}</span>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <span>{form.product_watermark_text_content}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })
                                   ) : (
-                                    <span>{form.product_watermark_text_content}</span>
+                                    <div
+                                      className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none pointer-events-auto hover:bg-orange-500/10 border-y border-dashed border-transparent hover:border-orange-500 py-1 touch-none"
+                                      style={{
+                                        top: `${form.product_watermark_text_y ?? 80}%`,
+                                        opacity: (parseFloat(String(form.product_watermark_text_opacity ?? 35))) / 100,
+                                        color: String(form.product_watermark_text_color ?? '#64748B'),
+                                        fontSize: `${form.product_watermark_text_font_size ?? 8}px`,
+                                        fontFamily: `var(${resolveFontVariable(String(form.product_watermark_text_font || 'be-vietnam-pro'))}), sans-serif`,
+                                        cursor: 'ns-resize',
+                                      }}
+                                      onPointerDown={(e) => handlePreviewPointerDown(e, 'text-move')}
+                                      onPointerMove={handlePreviewPointerMove}
+                                      onPointerUp={handlePreviewPointerUp}
+                                    >
+                                      {form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true' ? (
+                                        <div className="w-full overflow-hidden inline-flex justify-center gap-4">
+                                          {Array(8).fill(null).map((_, i) => (
+                                            <span key={i}>{form.product_watermark_text_content as string}</span>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <span>{form.product_watermark_text_content}</span>
+                                      )}
+                                    </div>
                                   )}
-                                </div>
+                                </>
                               )}
 
                               <span className="absolute bottom-1 right-2 text-[9px] font-bold text-slate-500 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xs px-1.5 py-0.5 rounded-sm">Preview</span>

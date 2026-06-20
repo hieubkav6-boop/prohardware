@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { resolveFontVariable } from '@/lib/fonts/registry';
 
 export function useProductWatermarkConfig() {
   const moduleEnabledSetting = useQuery(api.admin.modules.getModuleSetting, {
@@ -34,6 +35,9 @@ export function useProductWatermarkConfig() {
   const textColorSetting = useQuery(api.settings.getValue, { key: 'product_watermark_text_color' });
   const textOpacitySetting = useQuery(api.settings.getValue, { key: 'product_watermark_text_opacity' });
   const textRepeatSetting = useQuery(api.settings.getValue, { key: 'product_watermark_text_repeat' });
+  const textVerticalRepeatSetting = useQuery(api.settings.getValue, { key: 'product_watermark_text_vertical_repeat' });
+  const textFontSetting = useQuery(api.settings.getValue, { key: 'product_watermark_text_font' });
+  const textLineGapSetting = useQuery(api.settings.getValue, { key: 'product_watermark_text_line_gap' });
 
   return useMemo(() => {
     if (!enabled) {
@@ -72,6 +76,9 @@ export function useProductWatermarkConfig() {
         color: (textColorSetting as string) || '#64748B',
         opacity: parseNum(textOpacitySetting, 35),
         repeat: textRepeatSetting === true || textRepeatSetting === 'true',
+        verticalRepeat: textVerticalRepeatSetting === true || textVerticalRepeatSetting === 'true',
+        font: (textFontSetting as string) || 'be-vietnam-pro',
+        lineGap: parseNum(textLineGapSetting, 30),
       } : null,
     };
   }, [
@@ -89,6 +96,9 @@ export function useProductWatermarkConfig() {
     textColorSetting,
     textOpacitySetting,
     textRepeatSetting,
+    textVerticalRepeatSetting,
+    textFontSetting,
+    textLineGapSetting,
   ]);
 }
 
@@ -144,26 +154,59 @@ export function ProductImageWatermarkOverlay({
 
       {/* Watermark chữ */}
       {text && (
-        <div
-          className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none"
-          style={{
-            top: `${text.y}%`,
-            opacity: text.opacity / 100,
-            color: text.color,
-            fontSize: `calc(${text.fontSize} * 0.25cqw)`,
-            fontFamily: '"Be Vietnam Pro", sans-serif',
-          }}
-        >
-          {text.repeat ? (
-            <div className="w-full overflow-hidden inline-flex justify-center" style={{ gap: '1.5em' }}>
-              {Array(15).fill(null).map((_, i) => (
-                <span key={i}>{text.content}</span>
-              ))}
-            </div>
+        <>
+          {text.verticalRepeat ? (
+            Array.from({ length: 21 }, (_, index) => {
+              const i = index - 10;
+              const topVal = text.y + i * (text.lineGap ?? 30);
+              if (topVal < -20 || topVal > 120) return null;
+              return (
+                <div
+                  key={i}
+                  className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none"
+                  style={{
+                    top: `${topVal}%`,
+                    opacity: text.opacity / 100,
+                    color: text.color,
+                    fontSize: `calc(${text.fontSize} * 0.25cqw)`,
+                    fontFamily: `var(${resolveFontVariable(text.font)}), sans-serif`,
+                  }}
+                >
+                  {text.repeat ? (
+                    <div className="w-full overflow-hidden inline-flex justify-center" style={{ gap: '1.5em' }}>
+                      {Array(15).fill(null).map((_, idx) => (
+                        <span key={idx}>{text.content}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span>{text.content}</span>
+                  )}
+                </div>
+              );
+            })
           ) : (
-            <span>{text.content}</span>
+            <div
+              className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none"
+              style={{
+                top: `${text.y}%`,
+                opacity: text.opacity / 100,
+                color: text.color,
+                fontSize: `calc(${text.fontSize} * 0.25cqw)`,
+                fontFamily: `var(${resolveFontVariable(text.font)}), sans-serif`,
+              }}
+            >
+              {text.repeat ? (
+                <div className="w-full overflow-hidden inline-flex justify-center" style={{ gap: '1.5em' }}>
+                  {Array(15).fill(null).map((_, i) => (
+                    <span key={i}>{text.content}</span>
+                  ))}
+                </div>
+              ) : (
+                <span>{text.content}</span>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
