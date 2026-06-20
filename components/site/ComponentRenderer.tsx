@@ -5800,6 +5800,17 @@ function FooterSection({
   const description = (config.description as string) || 'Đối tác tin cậy của bạn trong mọi giải pháp công nghệ.';
   const columns = (config.columns as FooterColumn[]) || [];
   const socialLinks = (config.socialLinks as SocialLinkItem[]) || [];
+
+  const getSocials = () => socialLinks.length > 0 ? socialLinks : [
+    { icon: 'facebook', platform: 'facebook', url: '#' },
+    { icon: 'instagram', platform: 'instagram', url: '#' },
+    { icon: 'youtube', platform: 'youtube', url: '#' }
+  ];
+
+  const getColumns = () => columns.length > 0 ? columns : [
+    { links: [{ label: 'Giới thiệu', url: '/about' }, { label: 'Tuyển dụng', url: '/careers' }], title: 'Về chúng tôi' },
+    { links: [{ label: 'FAQ', url: '/faq' }, { label: 'Liên hệ', url: '/contact' }], title: 'Hỗ trợ' }
+  ];
   const copyright = (config.copyright as string) || '';
   const snapshotSite = config._snapshotSite as { site_name?: string } | undefined;
   const siteName = snapshotSite?.site_name || 'VietAdmin';
@@ -5822,6 +5833,22 @@ function FooterSection({
   const maxWidthClass = getFooterMaxWidthClass(config.maxWidth as FooterConfig['maxWidth']);
   const waveMaxWidthClass = maxWidthClass === 'max-w-6xl' || maxWidthClass === 'max-w-7xl' ? 'max-w-8xl' : maxWidthClass;
   const sectionSpacingClassName = getFooterSectionSpacingClassName(config.spacing, config.noVerticalMargin);
+  const numCols = Math.min(getColumns().length, 4) || 1;
+  const linksGridColsClass = numCols === 1
+    ? 'grid-cols-1 md:grid-cols-1'
+    : numCols === 2
+    ? 'grid-cols-2 md:grid-cols-2'
+    : numCols === 3
+    ? 'grid-cols-2 md:grid-cols-3'
+    : 'grid-cols-2 md:grid-cols-4';
+
+  const centeredGridColsClass = numCols === 1
+    ? 'grid-cols-1 md:grid-cols-2'
+    : numCols === 2
+    ? 'grid-cols-1 md:grid-cols-3'
+    : numCols === 3
+    ? 'grid-cols-1 md:grid-cols-4'
+    : 'grid-cols-1 md:grid-cols-5';
   const socialRadiusClassName = getFooterCornerRadiusClassName(cornerRadius, 'icon');
   const useOriginalSocialIconColors = config.useOriginalSocialIconColors !== false;
   const resolveSocialStyles = (platform: string, fallbackBg: string, fallbackText: string) => {
@@ -5905,16 +5932,7 @@ function FooterSection({
     }
   };
 
-  const getSocials = () => socialLinks.length > 0 ? socialLinks : [
-    { icon: 'facebook', platform: 'facebook', url: '#' },
-    { icon: 'instagram', platform: 'instagram', url: '#' },
-    { icon: 'youtube', platform: 'youtube', url: '#' }
-  ];
 
-  const getColumns = () => columns.length > 0 ? columns : [
-    { links: [{ label: 'Giới thiệu', url: '/about' }, { label: 'Tuyển dụng', url: '/careers' }], title: 'Về chúng tôi' },
-    { links: [{ label: 'FAQ', url: '/faq' }, { label: 'Liên hệ', url: '/contact' }], title: 'Hỗ trợ' }
-  ];
 
   // Style 1: Classic — 4-Column Grid (Lofi Gym style)
   if (style === 'classic') {
@@ -5927,7 +5945,7 @@ function FooterSection({
               {logoName && <span className="text-sm font-bold tracking-tight block" style={{ color: colors.heading }}>{logoName}</span>}
               <p className="text-xs leading-relaxed opacity-80" style={{ color: colors.textMuted }}>{description}</p>
             </div>
-            <div className="md:col-span-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className={cn("md:col-span-6 grid gap-4", linksGridColsClass)}>
               {getColumns().slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-[10px] uppercase tracking-wider mb-3 pb-1" style={{ color: colors.heading, borderBottom: `2px solid ${colors.borderSoft}` }}>{col.title}</h3>
@@ -5989,7 +6007,7 @@ function FooterSection({
               )}
               {renderBctLogo('h-12')}
             </div>
-            <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className={cn("md:col-span-8 grid gap-4", linksGridColsClass)}>
               {getColumns().slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2 pb-1 flex items-center gap-1" style={{ color: colors.heading, borderBottom: `1.5px solid ${colors.accent}` }}>
@@ -6044,7 +6062,7 @@ function FooterSection({
               )}
             </div>
           </div>
-          <div className="py-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={cn("py-6 grid gap-4", linksGridColsClass)}>
             {getColumns().slice(0, 4).map((col, colIdx) => (
               <div key={col.id || `col-${colIdx}`}>
                 <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: colors.heading }}>{col.title}</h4>
@@ -6091,7 +6109,7 @@ function FooterSection({
               )}
               {renderBctLogo('h-10')}
             </div>
-            <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className={cn("md:col-span-8 grid gap-4", linksGridColsClass)}>
               {getColumns().slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2" style={{ color: colors.heading }}>{col.title}</h3>
@@ -6121,7 +6139,7 @@ function FooterSection({
     return (
       <footer className="w-full" style={{ backgroundColor: colors.magazineBg }}>
         <div className={cn(maxWidthClass, 'mx-auto px-3 md:px-4', sectionSpacingClassName)}>
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-5">
+          <div className={cn("grid gap-6", centeredGridColsClass)}>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 {renderLogoMark(28)}
@@ -6200,7 +6218,7 @@ function FooterSection({
               {logoName && <span className="text-sm font-bold tracking-tight block" style={{ color: colors.stackedTextOnBg }}>{logoName}</span>}
               <p className="text-xs leading-relaxed opacity-85 max-w-xs" style={{ color: colors.stackedTextOnBg }}>{description}</p>
             </div>
-            <div className="md:col-span-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className={cn("md:col-span-6 grid gap-3", linksGridColsClass)}>
               {getColumns().slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2 pb-1" style={{ color: colors.stackedTextOnBg, borderBottom: '1px solid rgba(255,255,255,0.22)' }}>{col.title}</h3>

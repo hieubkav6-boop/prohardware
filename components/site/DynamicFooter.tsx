@@ -13,6 +13,7 @@ import { resolveTypeOverrideColors } from '@/app/admin/home-components/_shared/l
 import { resolveTypeOverrideFont } from '@/app/admin/home-components/_shared/lib/typeFontOverride';
 import { getIconNode } from '@/app/admin/home-components/speed-dial/_components/SpeedDialSectionShared';
 import { useSnapshotDemoContext } from '@/components/modules/homepage/SnapshotDemoProvider';
+import { cn } from '@/app/admin/components/ui';
 
 interface SocialLinkItem { id: number; platform: string; url: string; icon: string }
 interface FooterConfig {
@@ -153,6 +154,22 @@ export function DynamicFooter() {
   const resolveLogoSize = (baseSize: number) => getFooterLogoSize(baseSize, logoSizeLevel);
   const socials = getSocials(config);
   const columns = getColumns(config);
+  const numCols = Math.min(columns.length, 4) || 1;
+  const linksGridColsClass = numCols === 1
+    ? 'grid-cols-1 md:grid-cols-1'
+    : numCols === 2
+    ? 'grid-cols-2 md:grid-cols-2'
+    : numCols === 3
+    ? 'grid-cols-2 md:grid-cols-3'
+    : 'grid-cols-2 md:grid-cols-4';
+
+  const centeredGridColsClass = numCols === 1
+    ? 'grid-cols-1 md:grid-cols-2'
+    : numCols === 2
+    ? 'grid-cols-1 md:grid-cols-3'
+    : numCols === 3
+    ? 'grid-cols-1 md:grid-cols-4'
+    : 'grid-cols-1 md:grid-cols-5';
   const colors = getFooterThemeColors(style, brandColor, secondary, mode as FooterBrandMode, isDark);
   const useOriginalSocialIconColors = config.useOriginalSocialIconColors !== false;
   const maxWidthClass = `${getFooterMaxWidthClass(config.maxWidth)} tv:max-w-[1600px]`;
@@ -252,7 +269,7 @@ export function DynamicFooter() {
             </div>
 
             {/* Dynamic Link Columns — up to 4 columns */}
-            <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className={cn("lg:col-span-6 grid gap-6", linksGridColsClass)}>
               {columns.slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-sm uppercase tracking-wider mb-4 pb-2" style={{ color: colors.heading, borderBottom: `2px solid ${colors.borderSoft}` }}>{col.title}</h3>
@@ -350,7 +367,7 @@ export function DynamicFooter() {
             </div>
 
             {/* Link Columns — up to 4 columns */}
-            <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className={cn("lg:col-span-8 grid gap-6", linksGridColsClass)}>
               {columns.slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-sm uppercase tracking-wider mb-4 pb-2 flex items-center gap-2" style={{ color: colors.heading, borderBottom: `2px solid ${colors.borderSoft}` }}>
@@ -429,7 +446,7 @@ export function DynamicFooter() {
           </div>
 
           {/* Zone 2: Link Columns Grid — up to 4 columns */}
-          <div className="py-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={cn("py-4 grid gap-4", linksGridColsClass)}>
             {columns.slice(0, 4).map((col, colIdx) => (
               <div key={col.id || `col-${colIdx}`}>
                 <h4 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: colors.heading }}>{col.title}</h4>
@@ -502,7 +519,7 @@ export function DynamicFooter() {
             </div>
 
             {/* Link Columns — up to 4 columns */}
-            <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className={cn("lg:col-span-8 grid gap-6", linksGridColsClass)}>
               {columns.slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-sm uppercase tracking-wider mb-4" style={{ color: colors.heading }}>{col.title}</h3>
@@ -543,7 +560,7 @@ export function DynamicFooter() {
     return wrapWithFont(
       <footer className="w-full" style={{ backgroundColor: colors.magazineBg }}>
         <div className={`container ${maxWidthClass} mx-auto px-4 md:px-6 ${sectionSpacingClassName}`}>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 lg:gap-10">
+          <div className={cn("grid gap-8 lg:gap-10", centeredGridColsClass)}>
             {/* Brand + Social */}
             <div className="space-y-4">
               <Link href="/" className="inline-block">
@@ -672,7 +689,7 @@ export function DynamicFooter() {
             </div>
 
             {/* Link Columns — up to 4 */}
-            <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className={cn("lg:col-span-6 grid gap-4", linksGridColsClass)}>
               {columns.slice(0, 4).map((col, colIdx) => (
                 <div key={col.id || `col-${colIdx}`}>
                   <h3 className="font-bold text-xs uppercase tracking-wider mb-2.5 pb-1.5" style={{ color: colors.stackedTextOnBg, borderBottom: '1px solid rgba(255,255,255,0.22)' }}>{col.title}</h3>

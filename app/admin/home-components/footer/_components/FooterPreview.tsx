@@ -166,6 +166,23 @@ export const FooterPreview = ({
     title: typeof column.title === 'string' ? column.title : '',
   }));
 
+  const numCols = Math.min(columns.length, 4) || 1;
+  const linksGridColsClass = numCols === 1
+    ? 'grid-cols-1'
+    : numCols === 2
+    ? 'grid-cols-2'
+    : numCols === 3
+    ? 'grid-cols-2 md:grid-cols-3'
+    : 'grid-cols-2 md:grid-cols-4';
+
+  const centeredGridColsClass = numCols === 1
+    ? 'grid-cols-1 md:grid-cols-2'
+    : numCols === 2
+    ? 'grid-cols-1 md:grid-cols-3'
+    : numCols === 3
+    ? 'grid-cols-1 md:grid-cols-4'
+    : 'grid-cols-1 md:grid-cols-5';
+
   const previewShellPadding = getPreviewDeviceClass(device, {
     mobile: 'px-3',
     tablet: 'px-4',
@@ -182,9 +199,9 @@ export const FooterPreview = ({
     desktop: 'col-span-3 space-y-3 text-left',
   });
   const classicLinksGridClassName = getPreviewDeviceClass(device, {
-    mobile: 'grid gap-4 grid-cols-2',
-    tablet: 'grid gap-4 col-span-7 grid-cols-4',
-    desktop: 'grid gap-4 col-span-7 grid-cols-4',
+    mobile: `grid gap-4 ${numCols === 1 ? 'grid-cols-1' : 'grid-cols-2'}`,
+    tablet: `grid gap-4 col-span-7 grid-cols-${numCols}`,
+    desktop: `grid gap-4 col-span-7 grid-cols-${numCols}`,
   });
   const classicSocialColClassName = getPreviewDeviceClass(device, {
     mobile: 'space-y-3 text-center',
@@ -207,9 +224,9 @@ export const FooterPreview = ({
     desktop: 'grid gap-6 grid-cols-12 pb-6',
   });
   const corporateZone2ClassName = getPreviewDeviceClass(device, {
-    mobile: 'py-6 grid grid-cols-2 gap-4',
-    tablet: 'py-6 grid grid-cols-4 gap-4',
-    desktop: 'py-6 grid grid-cols-4 gap-4',
+    mobile: `py-6 grid ${numCols === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-4`,
+    tablet: `py-6 grid grid-cols-${numCols} gap-4`,
+    desktop: `py-6 grid grid-cols-${numCols} gap-4`,
   });
   const stackedGridClassName = getPreviewDeviceClass(device, {
     mobile: 'grid gap-4 grid-cols-1',
@@ -302,7 +319,7 @@ export const FooterPreview = ({
                 )}
                 {renderBctLogo(42)}
               </div>
-              <div className="lg:col-span-8 md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={cn("lg:col-span-8 md:col-span-8 grid gap-4", linksGridColsClass)}>
                 {columns.slice(0, 4).map((col, colIdx) => (
                   <div key={`${col.id ?? 'col'}-${colIdx}`}>
                     <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2 pb-1 flex items-center gap-1" style={{ color: colors.heading, borderBottom: `1.5px solid ${colors.borderSoft}` }}>
@@ -417,7 +434,7 @@ export const FooterPreview = ({
                 {renderBctLogo(36)}
               </div>
               {/* Link columns */}
-              <div className="lg:col-span-8 md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={cn("lg:col-span-8 md:col-span-8 grid gap-4", linksGridColsClass)}>
                 {columns.slice(0, 4).map((col, colIdx) => (
                   <div key={`${col.id ?? 'col'}-${colIdx}`}>
                     <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2" style={{ color: colors.heading }}>{col.title}</h3>
@@ -448,7 +465,7 @@ export const FooterPreview = ({
       return (
         <footer className="w-full" style={{ backgroundColor: colors.magazineBg }}>
           <div className={cn(maxWidthClass, 'mx-auto', previewShellPadding, sectionSpacingClassName)}>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className={cn("grid gap-6", centeredGridColsClass)}>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {renderLogoMark(24)}
@@ -534,7 +551,7 @@ export const FooterPreview = ({
                 {logoName && <span className="text-sm font-bold tracking-tight block" style={{ color: colors.stackedTextOnBg }}>{logoName}</span>}
                 <p className="text-xs leading-relaxed opacity-85" style={{ color: colors.stackedTextOnBg }}>{config.description || 'Đối tác tin cậy của bạn trong mọi giải pháp công nghệ.'}</p>
               </div>
-              <div className="lg:col-span-6 md:col-span-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className={cn("lg:col-span-6 md:col-span-6 grid gap-3", linksGridColsClass)}>
                 {columns.slice(0, 4).map((col, colIdx) => (
                   <div key={`${col.id ?? 'col'}-${colIdx}`}>
                     <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2 pb-1" style={{ color: colors.stackedTextOnBg, borderBottom: '1px solid rgba(255,255,255,0.22)' }}>{col.title}</h3>
