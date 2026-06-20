@@ -53,7 +53,7 @@ export const productsModule = defineModuleWithRuntime({
       default: 'cart',
       options: [
         { value: 'cart', label: 'Giỏ hàng & thanh toán' },
-        { value: 'contact', label: 'Nút liên hệ (/contact)' },
+        { value: 'contact', label: 'Nút liên hệ' },
         { value: 'affiliate', label: 'Nút Affiliate (Mua ngay)' },
       ],
     },

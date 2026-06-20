@@ -20,11 +20,20 @@ import { ProductSupplementalContentManager } from './ProductSupplementalContentM
 import { ShopConfigAdminContainer } from '@/components/modules/orders/ShopConfigAdminContainer';
 import { getEmailConfigurationStatus } from '@/lib/email-config-status';
 import { FONT_REGISTRY, resolveFontVariable } from '@/lib/fonts/registry';
+import {
+  DEFAULT_PRODUCT_CONTACT_SALE_LINK_TYPE,
+  PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY,
+  PRODUCT_CONTACT_SALE_LINK_OPTIONS,
+  PRODUCT_CONTACT_SALE_LINK_TYPE_KEY,
+  isValidProductContactSaleCustomUrl,
+  normalizeProductContactSaleLinkType,
+  resolveProductContactSaleHref,
+} from '@/lib/products/contact-sale-link';
 
 type SettingsSection = 'site' | 'contact' | 'seo' | 'advanced';
 type SettingsFormValue = string | boolean;
-type AdvancedTab = 'product-placeholder' | 'product-frame' | 'watermark' | 'header' | 'product-supplemental' | 'shop-config' | 'email-config';
-const ADVANCED_TAB_ORDER: AdvancedTab[] = ['product-placeholder', 'product-frame', 'watermark', 'header', 'product-supplemental', 'shop-config', 'email-config'];
+type AdvancedTab = 'product-placeholder' | 'product-frame' | 'watermark' | 'header' | 'product-supplemental' | 'shop-config' | 'contact-link' | 'email-config';
+const ADVANCED_TAB_ORDER: AdvancedTab[] = ['product-placeholder', 'product-frame', 'watermark', 'header', 'product-supplemental', 'shop-config', 'contact-link', 'email-config'];
 type HeaderConfig = {
   showBrandName?: boolean;
   logoSizeLevel?: number;
@@ -147,6 +156,7 @@ const PRODUCT_WATERMARK_ADVANCED_FEATURE = 'enableProductWatermarkAdvanced';
 const HEADER_MENU_ADVANCED_FEATURE = 'enableHeaderMenuAdvanced';
 const PRODUCT_SUPPLEMENTAL_ADVANCED_FEATURE = 'enableProductSupplementalAdvanced';
 const SHOP_CONFIG_ADVANCED_FEATURE = 'enableShopConfigAdvanced';
+const PRODUCT_CONTACT_LINK_ADVANCED_FEATURE = 'enableProductContactLinkAdvanced';
 const EMAIL_CONFIG_ADVANCED_FEATURE = 'enableMail';
 const EMAIL_SETTING_KEYS = [
   'mail_driver',
@@ -249,6 +259,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const featuresData = useQuery(api.admin.modules.listModuleFeatures, { moduleKey: MODULE_KEY });
   const fieldsData = useQuery(api.admin.modules.listModuleFields, { moduleKey: MODULE_KEY });
   const defaultImageAspectRatio = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'defaultImageAspectRatio' });
+  const productSaleModeSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'saleMode' });
   const [selectedFrameAR, setSelectedFrameAR] = useState<string>('');
   const [shopConfigDirty, setShopConfigDirty] = useState(false);
   const [shopConfigSaving, setShopConfigSaving] = useState(false);
@@ -278,6 +289,8 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const canEditEmailConfig = isFeatureEnabled(EMAIL_CONFIG_ADVANCED_FEATURE, false);
  
   const canEditProductSupplemental = isFeatureEnabled(PRODUCT_SUPPLEMENTAL_ADVANCED_FEATURE, true);
+  const isProductContactSaleMode = productSaleModeSetting?.value === 'contact';
+  const canEditProductContactLink = isProductContactSaleMode && isFeatureEnabled(PRODUCT_CONTACT_LINK_ADVANCED_FEATURE, true);
   const enabledAdvancedTabs = useMemo<AdvancedTab[]>(() => ADVANCED_TAB_ORDER.filter((tab) => {
     switch (tab) {
       case 'product-placeholder': return canEditProductImage;
@@ -286,6 +299,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       case 'header': return canEditHeaderMenu;
       case 'product-supplemental': return canEditProductSupplemental;
       case 'shop-config': return canEditShopConfig;
+      case 'contact-link': return canEditProductContactLink;
       case 'email-config': return canEditEmailConfig;
       default: return false;
     }
@@ -295,6 +309,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
     canEditProductFrame,
     canEditProductImage,
     canEditProductSupplemental,
+    canEditProductContactLink,
     canEditProductWatermark,
     canEditShopConfig,
   ]);
@@ -310,6 +325,12 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       setAdvancedTab('shop-config');
     }
   }, [tabParam, canEditShopConfig]);
+
+  useEffect(() => {
+    if (tabParam === 'contact-link' && canEditProductContactLink) {
+      setAdvancedTab('contact-link');
+    }
+  }, [tabParam, canEditProductContactLink]);
 
   useEffect(() => {
     if (tabParam === 'email-config' && canEditEmailConfig) {
@@ -371,7 +392,8 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
   const isLoading = settingsData === undefined
     || featuresData === undefined
-    || fieldsData === undefined;
+    || fieldsData === undefined
+    || productSaleModeSetting === undefined;
 
   const isSectionEnabled = section === 'site'
     ? true
@@ -448,6 +470,12 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       }
       if (values.product_image_placeholder === undefined) {
         values.product_image_placeholder = '';
+      }
+      if (values[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY] === undefined) {
+        values[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY] = DEFAULT_PRODUCT_CONTACT_SALE_LINK_TYPE;
+      }
+      if (values[PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY] === undefined) {
+        values[PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY] = '';
       }
       if (values.enable_product_frames === undefined) {
         values.enable_product_frames = false;
@@ -724,6 +752,15 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       }
     }
 
+    if (section === 'advanced' && advancedTab === 'contact-link' && canEditProductContactLink) {
+      const linkType = normalizeProductContactSaleLinkType(form[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY]);
+      const customUrl = getStringField(PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY).trim();
+      if (linkType === 'custom' && !isValidProductContactSaleCustomUrl(customUrl)) {
+        toast.error('Link tùy chỉnh phải bắt đầu bằng /, http(s)://, tel: hoặc mailto:.');
+        return false;
+      }
+    }
+
     // Validate required fields
     const requiredFields = fieldsData?.filter(f => f.required && f.enabled) ?? [];
     for (const field of requiredFields) {
@@ -876,6 +913,22 @@ function SettingsContent({ section }: { section: SettingsSection }) {
           key: 'header_config',
           value: normalizeHeaderConfig(headerConfigDraft),
         });
+      }
+      if (canEditProductContactLink) {
+        if (!settingsToSave.some((item) => item.key === PRODUCT_CONTACT_SALE_LINK_TYPE_KEY)) {
+          settingsToSave.push({
+            group: 'advanced',
+            key: PRODUCT_CONTACT_SALE_LINK_TYPE_KEY,
+            value: normalizeProductContactSaleLinkType(form[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY]),
+          });
+        }
+        if (!settingsToSave.some((item) => item.key === PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY)) {
+          settingsToSave.push({
+            group: 'advanced',
+            key: PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY,
+            value: form[PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY] || '',
+          });
+        }
       }
       if (section === 'advanced' && advancedTab === 'email-config' && canEditEmailConfig) {
         EMAIL_SETTING_KEYS.forEach((key) => {
@@ -1416,6 +1469,26 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const headerSpacingLevel = typeof headerConfigDraft.headerSpacingLevel === 'number' ? headerConfigDraft.headerSpacingLevel : 5;
   const logoSizeLabel = LOGO_SIZE_OPTIONS[logoSizeLevel - 1]?.label ?? 'Mặc định';
   const headerSpacingLabel = HEADER_SPACING_OPTIONS[headerSpacingLevel - 1]?.label ?? 'Cân bằng';
+  const productContactSaleLinkType = normalizeProductContactSaleLinkType(form[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY]);
+  const productContactSaleHref = resolveProductContactSaleHref(form);
+  const productContactSaleSourceText = (() => {
+    if (productContactSaleLinkType === 'zalo') {
+      const value = getStringField('contact_zalo');
+      return value ? `Đang dùng Zalo trong Thông tin liên hệ: ${value}` : 'Chưa có Zalo, hệ thống sẽ tạm dẫn về /contact.';
+    }
+    if (productContactSaleLinkType === 'messenger') {
+      const value = getStringField('contact_messenger');
+      return value ? `Đang dùng Messenger trong Thông tin liên hệ: ${value}` : 'Chưa có Messenger, hệ thống sẽ tạm dẫn về /contact.';
+    }
+    if (productContactSaleLinkType === 'phone') {
+      const value = getStringField('contact_phone');
+      return value ? `Đang dùng số điện thoại: ${value}` : 'Chưa có số điện thoại, hệ thống sẽ tạm dẫn về /contact.';
+    }
+    if (productContactSaleLinkType === 'custom') {
+      return 'Nhập link nội bộ hoặc link ngoài, ví dụ /contact hoặc https://zalo.me/0902723232.';
+    }
+    return 'Mặc định dẫn về trang /contact.';
+  })();
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-28">
@@ -1530,6 +1603,20 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                         )}
                       >
                         Cấu hình cửa hàng
+                      </button>
+                    )}
+                    {canEditProductContactLink && (
+                      <button
+                        type="button"
+                        onClick={() => handleTabChange('contact-link')}
+                        className={cn(
+                          'px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                          advancedTab === 'contact-link'
+                            ? 'border-orange-500 text-slate-900 dark:text-slate-100'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        )}
+                      >
+                        Liên hệ
                       </button>
                     )}
                     {canEditEmailConfig && (
@@ -2224,6 +2311,60 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                         saveShopConfigRef.current = ref;
                       }}
                     />
+                  )}
+                  {advancedTab === 'contact-link' && canEditProductContactLink && (
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                      <div className="lg:col-span-7 space-y-4">
+                        <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Đường dẫn nút Liên hệ</h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Áp dụng cho sản phẩm khi Chế độ bán hàng đang là Nút liên hệ.
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Điểm đến</Label>
+                          <select
+                            value={productContactSaleLinkType}
+                            onChange={(event) => updateField(PRODUCT_CONTACT_SALE_LINK_TYPE_KEY, event.target.value)}
+                            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                          >
+                            {PRODUCT_CONTACT_SALE_LINK_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-slate-500">{productContactSaleSourceText}</p>
+                        </div>
+                        {productContactSaleLinkType === 'custom' && (
+                          <div className="space-y-2">
+                            <Label>Link tùy chỉnh</Label>
+                            <Input
+                              value={getStringField(PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY)}
+                              onChange={(event) => updateField(PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY, event.target.value)}
+                              placeholder="https://zalo.me/0902723232"
+                            />
+                            <p className="text-xs text-slate-500">
+                              Hỗ trợ link nội bộ bắt đầu bằng /, link ngoài https://, tel: hoặc mailto:.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="lg:col-span-5">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                          <Label className="text-slate-900 dark:text-slate-100">Preview</Label>
+                          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                            <div className="inline-flex min-h-10 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
+                              Liên hệ
+                            </div>
+                            <div className="mt-3 space-y-1 text-xs text-slate-500">
+                              <p>Đường dẫn sẽ dùng:</p>
+                              <code className="block break-all rounded bg-slate-100 px-2 py-1 font-mono text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                {productContactSaleHref}
+                              </code>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                   {advancedTab === 'email-config' && canEditEmailConfig && (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

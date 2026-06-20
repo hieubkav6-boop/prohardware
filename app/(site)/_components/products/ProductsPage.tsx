@@ -19,6 +19,11 @@ import { getProductImageAspectRatioCssValue } from '@/lib/products/image-aspect-
 import { RichContent } from '@/components/common/RichContent';
 import { toRichTextContent } from '@/lib/products/product-supplemental-content';
 import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
+import {
+  PRODUCT_CONTACT_SALE_LINK_SETTING_KEYS,
+  navigateProductContactSaleHref,
+  resolveProductContactSaleHref,
+} from '@/lib/products/contact-sale-link';
 
 // Import các modules con được phân tách để tối ưu hóa kích thước file
 import { 
@@ -116,8 +121,10 @@ function ProductsContent(props: ProductsPageProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const saleModeSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'saleMode' });
+  const contactSaleLinkSettings = useQuery(api.settings.getMultiple, { keys: [...PRODUCT_CONTACT_SALE_LINK_SETTING_KEYS] });
   const routeModeSetting = useQuery(api.settings.getValue, { key: 'ia_route_mode', defaultValue: 'unified' });
   const routeMode = useMemo(() => normalizeRouteMode(routeModeSetting), [routeModeSetting]);
+  const contactSaleHref = useMemo(() => resolveProductContactSaleHref(contactSaleLinkSettings), [contactSaleLinkSettings]);
   const saleMode = useMemo<ProductsSaleMode>(() => {
     const value = saleModeSetting?.value;
     if (value === 'contact' || value === 'affiliate') {
@@ -922,7 +929,7 @@ function ProductsContent(props: ProductsPageProps) {
     }
 
     if (saleMode === 'contact') {
-      router.push('/contact');
+      navigateProductContactSaleHref(contactSaleHref, router);
       return;
     }
 

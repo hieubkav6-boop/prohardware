@@ -51,6 +51,11 @@ import { toRichTextContent } from '@/lib/products/product-supplemental-content';
 import { ProductAttributesBadges } from '../products/ProductsPage';
 import { buildCategoryPath, buildDetailPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useProductFrameConfig } from '@/components/shared/ProductImageFrameBox';
+import {
+  PRODUCT_CONTACT_SALE_LINK_SETTING_KEYS,
+  navigateProductContactSaleHref,
+  resolveProductContactSaleHref,
+} from '@/lib/products/contact-sale-link';
 
 type ProductDetailStyle = 'classic' | 'modern' | 'minimal' | 'premium';
 type ModernHeroStyle = 'full' | 'split' | 'minimal';
@@ -442,6 +447,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   const commentsRepliesFeature = useQuery(api.admin.modules.getModuleFeature, { featureKey: 'enableReplies', moduleKey: 'comments' });
   const commentsSettings = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'comments' });
   const saleModeSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'saleMode' });
+  const contactSaleLinkSettings = useQuery(api.settings.getMultiple, { keys: [...PRODUCT_CONTACT_SALE_LINK_SETTING_KEYS] });
   const wishlistModule = useQuery(api.admin.modules.getModuleByKey, { key: 'wishlist' });
   const ordersModule = useQuery(api.admin.modules.getModuleByKey, { key: 'orders' });
   const commerceCapabilities = useQuery(api.cart.getCommerceCapabilities, {});
@@ -670,6 +676,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     }
     return 'cart';
   }, [saleModeSetting?.value]);
+  const contactSaleHref = useMemo(() => resolveProductContactSaleHref(contactSaleLinkSettings), [contactSaleLinkSettings]);
   const commentRepliesMap = useMemo(() => {
     const map = new Map<string, CommentData[]>();
     comments.forEach((comment) => {
@@ -805,7 +812,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     }
 
     if (saleMode === 'contact') {
-      router.push('/contact');
+      navigateProductContactSaleHref(contactSaleHref, router);
       return;
     }
 

@@ -2,7 +2,7 @@
  
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Settings, Palette, Loader2, FolderTree, BookOpen, Sparkles, CheckCircle2, ArrowRight, Layers, AlertTriangle } from 'lucide-react';
 import type { ModuleDefinition } from '@/lib/modules/define-module';
@@ -333,6 +333,11 @@ export function ConfigTab({ config, moduleData, isReadOnly, localFeatures, local
 
   const isProductModule = config.key === 'products';
   const isSettingsModule = config.key === 'settings';
+  const productSaleModeSetting = useQuery(
+    api.admin.modules.getModuleSetting,
+    isSettingsModule ? { moduleKey: 'products', settingKey: 'saleMode' } : 'skip'
+  );
+  const isProductContactSaleMode = productSaleModeSetting?.value === 'contact';
   const advancedSettingsFeatureKeys = new Set([
     'enableProductImageAdvanced',
     'enableProductFrameAdvanced',
@@ -341,6 +346,7 @@ export function ConfigTab({ config, moduleData, isReadOnly, localFeatures, local
     'enableHeaderMenuAdvanced',
     'enableProductSupplementalAdvanced',
     'enableShopConfigAdvanced',
+    'enableProductContactLinkAdvanced',
   ]);
   const featureItems = config.features?.map(f => ({
     config: {
@@ -353,7 +359,9 @@ export function ConfigTab({ config, moduleData, isReadOnly, localFeatures, local
     enabled: localFeatures[f.key] ?? f.enabled ?? false,
   })) ?? [];
   const advancedSettingsFeatures = isSettingsModule
-    ? featureItems.filter(item => advancedSettingsFeatureKeys.has(item.config.key))
+    ? featureItems
+      .filter(item => advancedSettingsFeatureKeys.has(item.config.key))
+      .filter(item => item.config.key !== 'enableProductContactLinkAdvanced' || isProductContactSaleMode)
     : [];
   const regularFeatures = isSettingsModule
     ? featureItems.filter(item => !advancedSettingsFeatureKeys.has(item.config.key))

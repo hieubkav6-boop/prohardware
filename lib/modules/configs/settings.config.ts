@@ -1,4 +1,4 @@
-import { FileImage, Frame, Globe, LayoutTemplate, Mail, MapPin, Settings, Share2, Sparkles, Type } from 'lucide-react';
+import { FileImage, Frame, Globe, LayoutTemplate, Link2, Mail, MapPin, Settings, Share2, Sparkles, Type } from 'lucide-react';
 import { defineModuleWithRuntime } from '../define-module';
  
 export const settingsModule = defineModuleWithRuntime({
@@ -19,6 +19,7 @@ export const settingsModule = defineModuleWithRuntime({
      { key: 'enableHeaderMenuAdvanced', label: 'Header', description: 'Bật tab Header trong Admin > Cài đặt nâng cao', icon: LayoutTemplate, enabled: true },
      { key: 'enableProductSupplementalAdvanced', label: 'Nội dung mô tả SP', description: 'Bật tab Nội dung mô tả SP trong Admin > Cài đặt nâng cao', icon: Type, enabled: true },
      { key: 'enableShopConfigAdvanced', label: 'Cấu hình cửa hàng', description: 'Bật tab Cấu hình cửa hàng trong Admin > Cài đặt nâng cao', icon: Settings, enabled: true },
+     { key: 'enableProductContactLinkAdvanced', label: 'Liên hệ', description: 'Bật tab chọn đường dẫn cho nút bán hàng qua liên hệ', icon: Link2, enabled: true },
      { key: 'enableTrustPages', label: 'Trang tin cậy', icon: Globe },
      { key: 'enableTrustPagesAutoGenerate', label: 'Tự sinh Trust Pages', icon: Sparkles, enabled: true },
    ],

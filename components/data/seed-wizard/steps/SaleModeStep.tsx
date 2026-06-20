@@ -14,7 +14,7 @@ const SALE_MODE_OPTIONS: Array<{ description: string; key: SaleMode; label: stri
   {
     key: 'contact',
     label: 'Bấm nút Liên hệ',
-    description: 'Không mua online, chỉ liên hệ qua form /contact',
+    description: 'Không mua online, dẫn về đường liên hệ đã cấu hình',
     note: 'Tắt cart, orders, wishlist, promotions',
   },
   {
