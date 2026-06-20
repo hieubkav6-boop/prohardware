@@ -22,3 +22,4 @@ export { servicesModule } from './services.config';
 export { settingsModule } from './settings.config';
  export { usersModule } from './users.config';
  export { wishlistModule } from './wishlist.config';
+export { catalogsModule } from './catalogs.config';
