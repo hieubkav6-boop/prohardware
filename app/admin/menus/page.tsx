@@ -36,6 +36,7 @@ interface MenuItem {
   depth: number;
   parentId?: Id<"menuItems">;
   icon?: string;
+  isSpecial?: boolean;
   openInNewTab?: boolean;
   active: boolean;
 }
@@ -49,6 +50,7 @@ interface DraftMenuItem {
   depth: number;
   parentId?: Id<"menuItems">;
   icon?: string;
+  isSpecial?: boolean;
   openInNewTab?: boolean;
   active: boolean;
 }
@@ -193,6 +195,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       depth: item.depth,
       parentId: item.parentId,
       icon: item.icon,
+      isSpecial: item.isSpecial,
       openInNewTab: item.openInNewTab,
       active: item.active,
     }));
@@ -215,6 +218,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     depth: 0,
     order: 0,
     active: true,
+    isSpecial: false,
     ...partial,
   });
 
@@ -576,6 +580,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       depth: item.depth,
       active: item.active,
       icon: item.icon,
+      isSpecial: item.isSpecial,
       openInNewTab: item.openInNewTab,
       parentId: item.parentId,
       order: item.order,
@@ -697,6 +702,10 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
 
   const handleToggleActive = (item: DraftMenuItem) => {
     setDraftItems(prev => prev.map(current => current.localId === item.localId ? { ...current, active: !current.active } : current));
+  };
+
+  const handleToggleSpecial = (item: DraftMenuItem) => {
+    setDraftItems(prev => prev.map(current => current.localId === item.localId ? { ...current, isSpecial: !current.isSpecial } : current));
   };
 
   const handleDelete = (item: DraftMenuItem) => {
@@ -866,6 +875,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
           depth: item.depth,
           active: item.active,
           icon: item.icon,
+          isSpecial: item.isSpecial,
           openInNewTab: item.openInNewTab,
           parentId: item.parentId,
         })),
@@ -1010,16 +1020,30 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                 
                 <div className="flex-1 grid grid-cols-2 gap-3 min-w-0">
                   <div className="space-y-1">
-                    <Label className="text-xs text-slate-500 flex items-center gap-1.5">
-                      Nhãn hiển thị
-                      <span className={cn(
-                        "rounded px-1.5 py-0.5 text-[9px] font-bold select-none",
-                        item.depth === 0 && "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50",
-                        item.depth === 1 && "bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900/50",
-                        item.depth >= 2 && "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50"
-                      )}>
-                        {`Cấp ${item.depth + 1}`}
+                    <Label className="text-xs text-slate-500 flex items-center justify-between gap-1.5 w-full select-none">
+                      <span className="flex items-center gap-1.5">
+                        Nhãn hiển thị
+                        <span className={cn(
+                          "rounded px-1.5 py-0.5 text-[9px] font-bold select-none",
+                          item.depth === 0 && "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50",
+                          item.depth === 1 && "bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900/50",
+                          item.depth >= 2 && "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50"
+                        )}>
+                          {`Cấp ${item.depth + 1}`}
+                        </span>
                       </span>
+                      {item.depth === 0 && (
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input 
+                            type="checkbox" 
+                            checked={item.isSpecial || false} 
+                            onChange={() => handleToggleSpecial(item)} 
+                            className="sr-only peer" 
+                          />
+                          <div className="w-7 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-slate-600 peer-checked:bg-orange-500"></div>
+                          <span className="ms-1.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">Nổi bật</span>
+                        </label>
+                      )}
                     </Label>
                     <Input 
                       value={item.label} 

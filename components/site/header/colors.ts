@@ -47,7 +47,7 @@ const getAPCALc = (text: string, background: string) => {
   return Number.isFinite(lc) ? lc : 0;
 };
 
-const getAPCATextColor = (background: string, _fontSize = 16, _fontWeight = 500) => {
+export const getAPCATextColor = (background: string, _fontSize = 16, _fontWeight = 500) => {
   const bgRgb = toRgbTuple(background, '#0f172a');
   if (!bgRgb) {
     return '#111111';

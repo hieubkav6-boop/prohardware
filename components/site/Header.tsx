@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import { ArrowLeft, ChevronDown, ChevronRight, Heart, LogOut, Mail, Package, Phone, Search, User, X, Sun, Moon } from 'lucide-react';
 import { CartIcon } from './CartIcon';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
-import { getMenuColors, resolveMenuLayerColors, type MenuColors, type MenuLayerColorConfig } from './header/colors';
+import { getMenuColors, resolveMenuLayerColors, getAPCATextColor, type MenuColors, type MenuLayerColorConfig } from './header/colors';
 import { buildMenuTree, type MenuTreeNode } from '@/lib/utils/menu-tree';
 
 interface MenuItem {
@@ -23,6 +23,7 @@ interface MenuItem {
   depth: number;
   active: boolean;
   icon?: string;
+  isSpecial?: boolean;
   openInNewTab?: boolean;
 }
 
@@ -1261,15 +1262,22 @@ export function Header({
                     href={item.url}
                     target={item.openInNewTab ? '_blank' : undefined}
                     className={cn(
-                      "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1",
-                      hoveredItem === item._id
-                        ? "text-[var(--menu-hover-text)]"
-                        : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]"
+                      "px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5",
+                      item.isSpecial
+                        ? "shadow-sm hover:opacity-90 active:scale-[0.98]"
+                        : (hoveredItem === item._id
+                          ? "text-[var(--menu-hover-text)]"
+                          : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]")
                     )}
                     style={{
-                      ...(hoveredItem === item._id
-                        ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
-                        : { color: layerColors.navbar.text }),
+                      ...(item.isSpecial
+                        ? {
+                            backgroundColor: brandColors.primary,
+                            color: getAPCATextColor(brandColors.primary),
+                          }
+                        : (hoveredItem === item._id
+                          ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
+                          : { color: layerColors.navbar.text })),
                       ...menuVars,
                     }}
                     title={item.label}
@@ -1876,15 +1884,22 @@ export function Header({
                   href={item.url}
                   target={item.openInNewTab ? '_blank' : undefined}
                   className={cn(
-                    "px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1",
-                    hoveredItem === item._id
-                      ? "text-[var(--menu-hover-text)]"
-                      : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]"
+                    "px-3 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5",
+                    item.isSpecial
+                      ? "shadow-sm hover:opacity-90 active:scale-[0.98]"
+                      : (hoveredItem === item._id
+                        ? "text-[var(--menu-hover-text)]"
+                        : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]")
                   )}
                   style={{
-                    ...(hoveredItem === item._id
-                      ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
-                      : { color: layerColors.menu.text }),
+                    ...(item.isSpecial
+                      ? {
+                          backgroundColor: brandColors.primary,
+                          color: getAPCATextColor(brandColors.primary),
+                        }
+                      : (hoveredItem === item._id
+                        ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
+                        : { color: layerColors.menu.text })),
                     ...menuVars,
                   }}
                 >
@@ -2090,9 +2105,21 @@ export function Header({
               <Link
                 href={item.url}
                 target={item.openInNewTab ? '_blank' : undefined}
-                className={cn('text-sm font-semibold uppercase tracking-wide transition-colors flex items-center gap-1', textClassName)}
+                className={cn(
+                  item.isSpecial
+                    ? 'text-sm font-semibold uppercase tracking-wide transition-all flex items-center gap-1.5 px-4 py-2 rounded-lg shadow-sm hover:opacity-90 active:scale-[0.98]'
+                    : 'text-sm font-semibold uppercase tracking-wide transition-colors flex items-center gap-1',
+                  textClassName
+                )}
                 style={{
-                  color: hoveredItem === item._id ? tokens.primary : '#ffffff',
+                  ...(item.isSpecial
+                    ? {
+                        backgroundColor: brandColors.primary,
+                        color: getAPCATextColor(brandColors.primary),
+                      }
+                    : {
+                        color: hoveredItem === item._id ? tokens.primary : '#ffffff',
+                      }),
                   ...menuVars
                 }}
               >
@@ -2651,12 +2678,23 @@ export function Header({
                       href={item.url}
                       target={item.openInNewTab ? '_blank' : undefined}
                       className={cn(
-                        'text-sm font-medium transition-colors flex items-center gap-1',
-                        hoveredItem === item._id
-                          ? 'text-[var(--menu-hover-text)]'
-                          : 'hover:text-[var(--menu-hover-text)]'
+                        item.isSpecial
+                          ? 'text-sm font-medium transition-all flex items-center gap-1.5 px-4 py-2 rounded-lg shadow-sm hover:opacity-90 active:scale-[0.98]'
+                          : (hoveredItem === item._id
+                            ? 'text-sm font-medium transition-colors flex items-center gap-1 text-[var(--menu-hover-text)]'
+                            : 'text-sm font-medium transition-colors flex items-center gap-1 hover:text-[var(--menu-hover-text)]')
                       )}
-                      style={{ color: layerColors.navbar.text, ...menuVars }}
+                      style={{
+                        ...(item.isSpecial
+                          ? {
+                              backgroundColor: brandColors.primary,
+                              color: getAPCATextColor(brandColors.primary),
+                            }
+                          : {
+                              color: layerColors.navbar.text,
+                            }),
+                        ...menuVars
+                      }}
                     >
                       <span>{item.label}</span>
                       {item.children.length > 0 && (

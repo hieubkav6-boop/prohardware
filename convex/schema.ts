@@ -742,6 +742,7 @@ export default defineSchema({
     active: v.boolean(),
     depth: v.number(),
     icon: v.optional(v.string()),
+    isSpecial: v.optional(v.boolean()),
     label: v.string(),
     menuId: v.id("menus"),
     openInNewTab: v.optional(v.boolean()),

@@ -8,6 +8,7 @@ type MenuItemExport = {
   active: boolean;
   depth: number;
   icon?: string;
+  isSpecial?: boolean;
   label: string;
   menuLocation: string;
   openInNewTab?: boolean;
@@ -269,6 +270,7 @@ const buildMenuItemsExport = (menuLocation: string, items: Doc<"menuItems">[]) =
       active: item.active,
       depth: item.depth,
       icon: item.icon,
+      isSpecial: item.isSpecial,
       label: item.label,
       menuLocation,
       openInNewTab: item.openInNewTab,
@@ -1288,6 +1290,7 @@ export const importBundle = mutation({
               active: row.active,
               depth: row.depth,
               icon: row.icon,
+              isSpecial: row.isSpecial,
               label: row.label,
               menuId: menuDoc._id,
               openInNewTab: row.openInNewTab,
