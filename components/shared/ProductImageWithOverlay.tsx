@@ -22,6 +22,7 @@ import type { WatermarkConfig } from './ProductImageWatermarkOverlay';
 import { useProductWatermarkConfig } from './ProductImageWatermarkOverlay';
 import type { ProductFrameConfig } from './ProductImageFrameBox';
 import { useProductFrameConfig } from './ProductImageFrameBox';
+import { resolveFontVariable } from '@/lib/fonts/registry';
 
 export type { WatermarkConfig };
 export type { ProductFrameConfig };
@@ -70,30 +71,59 @@ function InlineWatermarkOverlay({ config }: { config: WatermarkConfig }) {
 
       {/* Watermark chữ — font-size dùng cqw (tỷ lệ theo chiều rộng container) */}
       {text && (
-        <div
-          className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none"
-          style={{
-            top: `${text.y}%`,
-            opacity: text.opacity / 100,
-            color: text.color,
-            // cqw — Container Query Width: % chiều rộng của container ngoài cùng
-            // => font-size co giãn hoàn toàn theo chiều rộng ảnh
-            fontSize: `calc(${text.fontSize} * 0.25cqw)`,
-            fontFamily: '"Be Vietnam Pro", sans-serif',
-          }}
-        >
-          {text.repeat ? (
-            // gap: 1.5em — tỷ lệ theo font-size (vì font-size co giãn cqw nên gap cũng co giãn)
-            // => khoảng cách thưa chữ scale đồng bộ cùng font như 1 bức ảnh thống nhất
-            <div className="w-full overflow-hidden inline-flex justify-center" style={{ gap: '1.5em' }}>
-              {Array(15).fill(null).map((_, i) => (
-                <span key={i}>{text.content}</span>
-              ))}
-            </div>
+        <>
+          {text.verticalRepeat ? (
+            Array.from({ length: 21 }, (_, index) => {
+              const i = index - 10;
+              const topVal = text.y + i * (text.lineGap ?? 30);
+              if (topVal < -20 || topVal > 120) return null;
+              return (
+                <div
+                  key={i}
+                  className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none"
+                  style={{
+                    top: `${topVal}%`,
+                    opacity: text.opacity / 100,
+                    color: text.color,
+                    fontSize: `calc(${text.fontSize} * 0.25cqw)`,
+                    fontFamily: `var(${resolveFontVariable(text.font)}), sans-serif`,
+                  }}
+                >
+                  {text.repeat ? (
+                    <div className="w-full overflow-hidden inline-flex justify-center" style={{ gap: '1.5em' }}>
+                      {Array(15).fill(null).map((_, idx) => (
+                        <span key={idx}>{text.content}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span>{text.content}</span>
+                  )}
+                </div>
+              );
+            })
           ) : (
-            <span>{text.content}</span>
+            <div
+              className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none"
+              style={{
+                top: `${text.y}%`,
+                opacity: text.opacity / 100,
+                color: text.color,
+                fontSize: `calc(${text.fontSize} * 0.25cqw)`,
+                fontFamily: `var(${resolveFontVariable(text.font)}), sans-serif`,
+              }}
+            >
+              {text.repeat ? (
+                <div className="w-full overflow-hidden inline-flex justify-center" style={{ gap: '1.5em' }}>
+                  {Array(15).fill(null).map((_, i) => (
+                    <span key={i}>{text.content}</span>
+                  ))}
+                </div>
+              ) : (
+                <span>{text.content}</span>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
