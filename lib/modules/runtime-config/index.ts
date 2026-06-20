@@ -22,6 +22,7 @@ import { settingsModule } from '../configs/settings.config';
 import { subscriptionsModule } from '../configs/subscriptions.config';
 import { usersModule } from '../configs/users.config';
 import { wishlistModule } from '../configs/wishlist.config';
+import { catalogsModule } from '../configs/catalogs.config';
 import { normalizeRuntimeDefinition } from './normalize';
 import type { RuntimeModuleDefinition } from './types';
 
@@ -121,6 +122,7 @@ const moduleDefinitions = [
   subscriptionsModule,
   usersModule,
   wishlistModule,
+  catalogsModule,
 ];
 
 const MODULE_RUNTIME_DEFINITIONS: Record<string, RuntimeModuleDefinition> = {
