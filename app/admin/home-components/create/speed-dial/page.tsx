@@ -31,6 +31,7 @@ export default function SpeedDialCreatePage() {
   const [defaultOpen, setDefaultOpen] = React.useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.defaultOpen);
   const [showOnAllPages, setShowOnAllPages] = React.useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.showOnAllPages);
   const [enableShadow, setEnableShadow] = React.useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.enableShadow);
+  const [enableGlassmorphism, setEnableGlassmorphism] = React.useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.enableGlassmorphism ?? false);
 
   const onSubmit = (event: React.FormEvent) => {
     const payload: SpeedDialConfig = {
@@ -46,6 +47,7 @@ export default function SpeedDialCreatePage() {
       defaultOpen,
       showOnAllPages,
       enableShadow,
+      enableGlassmorphism,
     };
 
     void handleSubmit(event, payload as unknown as Record<string, unknown>);
@@ -76,6 +78,8 @@ export default function SpeedDialCreatePage() {
         onShowOnAllPagesChange={setShowOnAllPages}
         enableShadow={enableShadow}
         onEnableShadowChange={setEnableShadow}
+        enableGlassmorphism={enableGlassmorphism}
+        onEnableGlassmorphismChange={setEnableGlassmorphism}
         defaultActionColor={secondary || primary}
       />
 
@@ -91,6 +95,7 @@ export default function SpeedDialCreatePage() {
         onStyleChange={setStyle}
         defaultOpen={defaultOpen}
         enableShadow={enableShadow}
+        enableGlassmorphism={enableGlassmorphism}
       />
     </ComponentFormWrapper>
   );
