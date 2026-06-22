@@ -13,6 +13,8 @@ export const catalogsModule = defineModuleWithRuntime({
 
   settings: [
     { key: 'catalogsPerPage', label: 'Số catalog / trang', type: 'number', default: 12 },
+    { key: 'catalogsTitle', label: 'Tiêu đề trang', type: 'text', default: 'Catalog & Tài Liệu' },
+    { key: 'catalogsSubtitle', label: 'Mô tả ngắn trang', type: 'text', default: 'Chúng tôi Chuyên Phân Phối các dòng Thiết Bị Vệ Sinh uy tín như: van, vòi hồ, sen tắm, vòi sen, vòi lavabo... với thiết kế hiện đại, độ bền cao, đáp ứng mọi nhu cầu từ hộ gia đình đến công trình lớn.' },
   ],
 
   runtimeConfig: {

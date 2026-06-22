@@ -14,6 +14,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { LexicalEditor } from '../components/LexicalEditor';
 
 function generateSlug(text: string) {
   return text.toLowerCase()
@@ -59,6 +60,10 @@ function CatalogsCRUDContent() {
   const reorderMutation = useMutation(api.catalogs.reorder);
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
 
+  // Settings API
+  const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'catalogs' });
+  const setSettingMutation = useMutation(api.admin.modules.setModuleSetting);
+
   // States for CRUD
   const [editingCatalog, setEditingCatalog] = useState<CatalogItem | null>(null);
   const [title, setTitle] = useState('');
@@ -68,6 +73,11 @@ function CatalogsCRUDContent() {
   const [status, setStatus] = useState<CatalogStatus>('Draft');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [extractionProgress, setExtractionProgress] = useState<{ current: number; total: number } | null>(null);
+
+  // States for Page Config settings
+  const [pageTitle, setPageTitle] = useState('Catalog & Tài Liệu');
+  const [pageSubtitle, setPageSubtitle] = useState('Chúng tôi Chuyên Phân Phối các dòng Thiết Bị Vệ Sinh uy tín như: van, vòi hồ, sen tắm, vòi sen, vòi lavabo... với thiết kế hiện đại, độ bền cao, đáp ứng mọi nhu cầu từ hộ gia đình đến công trình lớn.');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dndSensors = useAdminDndSensors();
@@ -94,6 +104,38 @@ function CatalogsCRUDContent() {
     }
     setExtractionProgress(null);
   }, [editingCatalog]);
+
+  // Sync settings when loaded
+  useEffect(() => {
+    if (settingsData && settingsData.length > 0) {
+      const titleItem = settingsData.find(s => s.settingKey === 'catalogsTitle');
+      const subtitleItem = settingsData.find(s => s.settingKey === 'catalogsSubtitle');
+      if (titleItem) setPageTitle(titleItem.value || 'Catalog & Tài Liệu');
+      if (subtitleItem) setPageSubtitle(subtitleItem.value || '');
+    }
+  }, [settingsData]);
+
+  const handleSavePageSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      await setSettingMutation({
+        moduleKey: 'catalogs',
+        settingKey: 'catalogsTitle',
+        value: pageTitle.trim(),
+      });
+      await setSettingMutation({
+        moduleKey: 'catalogs',
+        settingKey: 'catalogsSubtitle',
+        value: pageSubtitle.trim(),
+      });
+      toast.success('Đã lưu cấu hình trang Catalog thành công!');
+    } catch {
+      toast.error('Lỗi khi lưu cấu hình trang');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -307,6 +349,46 @@ function CatalogsCRUDContent() {
         </div>
       </div>
 
+      {/* Card Cấu hình Trang - Full 12 cột */}
+      <Card className="shadow-sm border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <CardHeader className="py-4 px-6 border-b border-gray-100 dark:border-gray-800">
+          <CardTitle className="text-base font-semibold">Cấu hình Giao diện Trang</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <form onSubmit={handleSavePageSettings} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pageTitle" className="text-xs font-semibold">Tiêu đề chính trang</Label>
+              <Input
+                id="pageTitle"
+                value={pageTitle}
+                onChange={(e) => setPageTitle(e.target.value)}
+                placeholder="Ví dụ: Catalog & Tài Liệu"
+                disabled={isSavingSettings}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold block">Mô tả giới thiệu trang (RichText)</Label>
+              <LexicalEditor 
+                onChange={setPageSubtitle} 
+                initialContent={pageSubtitle} 
+                resetKey={`catalogs-subtitle-${settingsData ? 'loaded' : 'loading'}`}
+              />
+            </div>
+            <div className="pt-2 flex justify-end">
+              <Button 
+                type="submit" 
+                variant="accent" 
+                size="sm"
+                disabled={isSavingSettings}
+              >
+                {isSavingSettings ? 'Đang lưu...' : 'Lưu cấu hình'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Cột trái: Danh sách (Dnd) */}
         <div className="lg:col-span-7 space-y-4">
@@ -348,8 +430,9 @@ function CatalogsCRUDContent() {
           </Card>
         </div>
 
-        {/* Cột phải: Form Inline */}
-        <div className="lg:col-span-5">
+        {/* Cột phải: Form Inline CRUD */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Form Thêm/Cập nhật Catalog */}
           <Card className={`shadow-sm transition-all duration-300 border bg-white dark:bg-gray-900 ${
             editingCatalog 
               ? 'border-[#C21A1A]/50 shadow-[#C21A1A]/5 dark:border-[#C21A1A]/50 bg-red-50/5' 

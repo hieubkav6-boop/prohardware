@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/app/admin/components/ui';
 import { useImagePreloader } from './useImagePreloader';
+import { usePageFlipSound } from './usePageFlipSound';
 
 interface CatalogFlipbookProps {
   images: string[];
@@ -109,6 +110,7 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const flipBookRef = useRef<any>(null);
   const { preloadForViewer } = useImagePreloader();
+  const { playFlipSound } = usePageFlipSound({ volume: 0.25, enabled: true });
 
   // Reset when images change
   useEffect(() => {
@@ -184,6 +186,7 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
 
   const onFlip = (e: any) => {
     setPage(e.data);
+    playFlipSound();
   };
 
   const nextButtonClick = () => {

@@ -339,3 +339,48 @@ export const incrementViews = mutation({
     });
   },
 });
+
+export const listPublishedWithUrls = query({
+  args: {},
+  handler: async (ctx) => {
+    const list = await ctx.db
+      .query("catalogs")
+      .withIndex("by_status_order", (q) => q.eq("status", "Published"))
+      .collect();
+
+    // Sắp xếp thứ tự tăng dần
+    list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    const results = [];
+    for (const catalog of list) {
+      let pdfUrl = null;
+      if (catalog.pdfStorageId) {
+        pdfUrl = await ctx.storage.getUrl(catalog.pdfStorageId);
+      }
+      
+      let thumbnailUrl = catalog.thumbnail;
+      if (catalog.thumbnailStorageId) {
+        thumbnailUrl = await ctx.storage.getUrl(catalog.thumbnailStorageId) || catalog.thumbnail;
+      }
+
+      const pageImageUrls = [];
+      if (catalog.pageImages && catalog.pageImages.length > 0) {
+        for (const storageId of catalog.pageImages) {
+          if (storageId) {
+            const url = await ctx.storage.getUrl(storageId);
+            pageImageUrls.push(url);
+          } else {
+            pageImageUrls.push(null);
+          }
+        }
+      }
+      results.push({
+        ...catalog,
+        pdfUrl,
+        thumbnailUrl,
+        pageImageUrls,
+      });
+    }
+    return results;
+  },
+});
