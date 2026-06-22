@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { CatalogFlipbook } from './CatalogFlipbook';
@@ -32,6 +31,7 @@ export function CatalogsClientView({
 }: CatalogsClientViewProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
+  const [viewType, setViewType] = useState<'all' | 'single'>('all');
   const { preloadFirstPages, preload } = useImagePreloader();
 
   // Đăng ký WebSocket với Convex để đồng bộ realtime khi thay đổi dữ liệu/cấu hình
@@ -55,6 +55,11 @@ export function CatalogsClientView({
     return (rawCatalogs || []).filter(c => c.title !== 'Catalog 2024');
   }, [rawCatalogs]);
 
+  // Xác định xem có tài liệu nào thực sự có gán danh mục hay không
+  const hasCategories = useMemo(() => {
+    return catalogs.some(c => c.category && c.category.trim() !== '');
+  }, [catalogs]);
+
   // Lấy danh sách các danh mục độc nhất
   const categoriesList = useMemo(() => {
     const list = new Set<string>();
@@ -73,9 +78,10 @@ export function CatalogsClientView({
 
   // Lọc catalogs theo danh mục đang chọn
   const filteredCatalogs = useMemo(() => {
+    if (!hasCategories) return catalogs;
     if (!selectedCategoryName) return catalogs;
     return catalogs.filter(c => (c.category?.trim() || 'Tài liệu chung') === selectedCategoryName);
-  }, [catalogs, selectedCategoryName]);
+  }, [catalogs, selectedCategoryName, hasCategories]);
 
   // Tier 1: Preload trang đầu của tất cả catalogs khi load trang
   useEffect(() => {
@@ -135,7 +141,6 @@ export function CatalogsClientView({
         </div>
 
         <div className="flex flex-col items-center justify-center py-16">
-          <BookOpen className="w-16 h-16 text-gray-300 mb-4" />
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">Không tìm thấy catalog nào</h3>
         </div>
       </div>
@@ -147,7 +152,7 @@ export function CatalogsClientView({
   );
 
   return (
-    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Banner Tiêu đề & Giới thiệu Trang */}
       <div className="bg-slate-50/60 dark:bg-gray-900/60 backdrop-blur border border-gray-100 dark:border-gray-800/80 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
         {/* Họa tiết trang trí nền */}
@@ -165,71 +170,99 @@ export function CatalogsClientView({
         </div>
       </div>
 
-      {/* Dropdown Selectors thay thế Sidebar Accordion */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 animate-fade-in">
-        <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
-          {/* Danh mục Selector */}
-          <div className="space-y-1.5 flex-1 max-w-sm">
-            <label htmlFor="category-select" className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
-              Danh mục tài liệu
-            </label>
-            <div className="relative font-semibold text-slate-700">
-              <select
-                id="category-select"
-                value={selectedCategoryName}
-                onChange={(e) => {
-                  setSelectedCategoryName(e.target.value);
-                  setActiveIndex(0); // reset index về catalog đầu tiên của danh mục mới
-                }}
-                className="w-full flex h-11 items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
-              >
-                {categoriesList.map(cat => (
-                  <option key={cat} value={cat}>
-                    📁  {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* Dropdown Selectors tối giản */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-2 sm:p-3 shadow-sm flex flex-wrap items-center gap-3 text-xs animate-fade-in">
+        {/* Danh mục Selector */}
+        {hasCategories && (
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              Danh mục:
+            </span>
+            <select
+              id="category-select"
+              value={selectedCategoryName}
+              onChange={(e) => {
+                setSelectedCategoryName(e.target.value);
+                setActiveIndex(0);
+              }}
+              className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+            >
+              {categoriesList.map(cat => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
+        )}
 
-          {/* Tài liệu Selector */}
-          <div className="space-y-1.5 flex-1 max-w-sm">
-            <label htmlFor="catalog-select" className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
-              Chọn tài liệu sách lật
-            </label>
-            <div className="relative font-semibold text-slate-700">
-              <select
-                id="catalog-select"
-                value={activeCatalog?._id}
-                onChange={(e) => handleSelectCatalogById(e.target.value)}
-                className="w-full flex h-11 items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
-              >
-                {filteredCatalogs.map(catalog => (
-                  <option key={catalog._id} value={catalog._id}>
-                    📖  {catalog.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Thông tin tài liệu đang đọc */}
-        <div className="hidden lg:block text-right">
-          <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-1">
-            Đang hiển thị tài liệu
+        {/* Chế độ xem Selector */}
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+            Chế độ xem:
           </span>
-          <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 justify-end">
-            <BookOpen className="w-4 h-4 text-[#C21A1A]" />
-            {activeCatalog?.title}
-          </h2>
+          <select
+            id="view-type-select"
+            value={viewType}
+            onChange={(e) => setViewType(e.target.value as 'all' | 'single')}
+            className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+          >
+            <option value="all">Xem tất cả</option>
+            <option value="single">Chọn tài liệu</option>
+          </select>
         </div>
+
+        {/* Tài liệu Selector (chỉ hiện khi viewType === 'single') */}
+        {viewType === 'single' && (
+          <div className="flex items-center gap-2 animate-fade-in">
+            <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              Tài liệu:
+            </span>
+            <select
+              id="catalog-select"
+              value={activeCatalog?._id}
+              onChange={(e) => handleSelectCatalogById(e.target.value)}
+              className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+            >
+              {filteredCatalogs.map(catalog => (
+                <option key={catalog._id} value={catalog._id}>
+                  {catalog.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Sách Lật Full Width max-w-8xl */}
-      <div className="w-full">
-        <CatalogFlipbook images={activeImages} title={activeCatalog.title} />
-      </div>
+      {viewType === 'all' ? (
+        <div className="space-y-12">
+          {filteredCatalogs.map((catalog) => {
+            const images = (catalog.pageImageUrls || []).filter(
+              (url): url is string => url !== null
+            );
+            return (
+              <div key={catalog._id} className="space-y-3">
+                <div className="border-l-4 border-[#C21A1A] pl-3 py-0.5">
+                  <h2 className="text-base font-bold text-gray-900 dark:text-white">
+                    {catalog.title}
+                  </h2>
+                  {catalog.description && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {catalog.description}
+                    </p>
+                  )}
+                </div>
+                <CatalogFlipbook images={images} title={catalog.title} />
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="w-full">
+          <CatalogFlipbook images={activeImages} title={activeCatalog.title} />
+        </div>
+      )}
     </div>
   );
 }

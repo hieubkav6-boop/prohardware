@@ -300,8 +300,8 @@ function CatalogsCRUDContent() {
       const payload = {
         title: title.trim(),
         slug: finalSlug,
-        category: category.trim() || undefined,
-        description: description.trim() || undefined,
+        category: category.trim(),
+        description: description.trim(),
         pdfStorageId: finalPdfStorageId!,
         pageImages: finalPageImages ? (finalPageImages.filter((img): img is string => img !== null) as Id<'_storage'>[]) : undefined,
         totalPages: finalTotalPages,
