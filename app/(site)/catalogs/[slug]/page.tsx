@@ -18,12 +18,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'Không tìm thấy catalog' };
   }
 
+  const seoTitle = `${catalog.title} | Catalog`;
+  const seoDescription = catalog.description || `Xem chi tiết catalog ${catalog.title} - Sách lật trực tuyến và bản PDF chất lượng cao tại AAA Pro Hardware.`;
+
   return {
-    title: catalog.metaTitle || `${catalog.title} | Catalog`,
-    description: catalog.metaDescription || catalog.description || `Xem chi tiết catalog ${catalog.title}`,
+    title: seoTitle,
+    description: seoDescription,
     openGraph: {
-      title: catalog.metaTitle || catalog.title,
-      description: catalog.metaDescription || catalog.description,
+      title: seoTitle,
+      description: seoDescription,
       images: catalog.thumbnail ? [{ url: catalog.thumbnail }] : [],
     },
   };

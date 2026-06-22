@@ -1,141 +1,154 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { BookOpen, ChevronDown, Copy, Edit, ExternalLink, Loader2, Plus, Search } from 'lucide-react';
+import { BookOpen, Edit, Loader2, Plus, Trash2, X, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../components/ui';
 import { ModuleGuard } from '../components/ModuleGuard';
-import { usePersistedPageSize } from '../components/usePersistedPageSize';
-import { AdminDragHandle, buildOrderUpdates, BulkActionBar, generatePaginationItems, getReorderedItems, SelectCheckbox, SortableTableRow, useAdminDndSensors } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, getReorderedItems, useAdminDndSensors } from '../components/TableUtilities';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-const STATUS_LABEL: Record<string, string> = {
-  Published: 'Hiện',
-  Draft: 'Ẩn',
-  Archived: 'Lưu trữ',
-};
+function generateSlug(text: string) {
+  return text.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9 -]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+}
 
-type CatalogStatus = '' | 'Published' | 'Draft' | 'Archived';
+type CatalogStatus = 'Published' | 'Draft' | 'Archived';
 
-export default function CatalogsListPage() {
+interface CatalogItem {
+  _id: Id<'catalogs'>;
+  title: string;
+  slug: string;
+  description?: string;
+  pdfStorageId?: Id<'_storage'>;
+  pdfUrl?: string | null;
+  embedUrl?: string;
+  status: CatalogStatus;
+  order: number;
+  featured?: boolean;
+}
+
+export default function CatalogsModulePage() {
   return (
     <ModuleGuard moduleKey="catalogs">
-      <CatalogsContent />
+      <CatalogsCRUDContent />
     </ModuleGuard>
   );
 }
 
-function CatalogsContent() {
-  const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'catalogs' });
-  const deleteCatalog = useMutation(api.catalogs.remove);
-  const duplicateCatalog = useMutation(api.catalogs.duplicate);
-  const reorderCatalogs = useMutation(api.catalogs.reorder);
+function CatalogsCRUDContent() {
+  const listQuery = useQuery(api.catalogs.listAdminWithOffset, { limit: 100, offset: 0 });
+  const createMutation = useMutation(api.catalogs.create);
+  const updateMutation = useMutation(api.catalogs.update);
+  const deleteMutation = useMutation(api.catalogs.remove);
+  const reorderMutation = useMutation(api.catalogs.reorder);
+  const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<CatalogStatus>('');
-  const [manualSelectedIds, setManualSelectedIds] = useState<Id<'catalogs'>[]>([]);
-  const [selectionMode, setSelectionMode] = useState<'manual' | 'all'>('manual');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [cloningCatalogId, setCloningCatalogId] = useState<Id<'catalogs'> | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  // States for CRUD
+  const [editingCatalog, setEditingCatalog] = useState<CatalogItem | null>(null);
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [embedUrl, setEmbedUrl] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<CatalogStatus>('Draft');
+  const [featured, setFeatured] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dndSensors = useAdminDndSensors();
-  const isSelectAllActive = selectionMode === 'all';
 
+  const catalogs = useMemo(() => listQuery ?? [], [listQuery]);
+  const isLoading = listQuery === undefined;
+
+  // Sync edit data when editingCatalog changes
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const catalogsPerPage = useMemo(() => {
-    const setting = settingsData?.find((item) => item.settingKey === 'catalogsPerPage');
-    return (setting?.value as number) || 12;
-  }, [settingsData]);
-  const [resolvedCatalogsPerPage, setPageSizeOverride] = usePersistedPageSize('admin_catalogs_page_size', catalogsPerPage);
-  const offset = (currentPage - 1) * resolvedCatalogsPerPage;
-
-  const catalogsData = useQuery(api.catalogs.listAdminWithOffset, {
-    limit: resolvedCatalogsPerPage,
-    offset,
-    search: debouncedSearchTerm.trim() || undefined,
-    status: filterStatus || undefined,
-  });
-  const totalCountData = useQuery(api.catalogs.countAdmin, {
-    search: debouncedSearchTerm.trim() || undefined,
-    status: filterStatus || undefined,
-  });
-
-  const selectAllData = useQuery(
-    api.catalogs.listAdminIds,
-    isSelectAllActive
-      ? {
-          search: debouncedSearchTerm.trim() || undefined,
-          status: filterStatus || undefined,
-        }
-      : 'skip'
-  );
-
-  const isLoading = catalogsData === undefined || totalCountData === undefined;
-  const catalogs = catalogsData ?? [];
-  const isReorderEnabled = !debouncedSearchTerm.trim() && !filterStatus;
-  const totalCount = totalCountData?.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / resolvedCatalogsPerPage));
-  const isSelectingAll = isSelectAllActive && selectAllData === undefined;
-  const selectedIds = isSelectAllActive && selectAllData ? selectAllData.ids : manualSelectedIds;
-
-  const toggleSelection = (id: Id<'catalogs'>) => {
-    if (isSelectAllActive) {
-      setSelectionMode('manual');
-      if (selectAllData) {
-        setManualSelectedIds(selectAllData.ids.filter((selectedId: Id<'catalogs'>) => selectedId !== id));
-      }
-      return;
-    }
-    setManualSelectedIds((prev) => (prev.includes(id) ? prev.filter((selectedId) => selectedId !== id) : [...prev, id]));
-  };
-
-  const toggleSelectAll = () => {
-    if (isSelectAllActive || manualSelectedIds.length > 0) {
-      setSelectionMode('manual');
-      setManualSelectedIds([]);
+    if (editingCatalog) {
+      setTitle(editingCatalog.title);
+      setSlug(editingCatalog.slug);
+      setEmbedUrl(editingCatalog.embedUrl || '');
+      setDescription(editingCatalog.description || '');
+      setStatus(editingCatalog.status);
+      setFeatured(editingCatalog.featured || false);
+      setPdfFile(null);
     } else {
-      setSelectionMode('all');
+      setTitle('');
+      setSlug('');
+      setEmbedUrl('');
+      setDescription('');
+      setStatus('Draft');
+      setFeatured(false);
+      setPdfFile(null);
+    }
+  }, [editingCatalog]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setTitle(val);
+    if (!editingCatalog) {
+      setSlug(generateSlug(val));
     }
   };
 
-  const handleDeleteSelected = async () => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedIds.length} catalog đã chọn?`)) return;
-    setIsDeleting(true);
-    try {
-      await Promise.all(selectedIds.map((id: Id<'catalogs'>) => deleteCatalog({ id })));
-      toast.success(`Đã xóa ${selectedIds.length} catalog.`);
-      setSelectionMode('manual');
-      setManualSelectedIds([]);
-    } catch (error) {
-      console.error('Lỗi khi xóa:', error);
-      toast.error('Lỗi khi xóa catalog.');
-    } finally {
-      setIsDeleting(false);
+  const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type !== 'application/pdf') {
+        toast.error('Vui lòng chọn file PDF');
+        return;
+      }
+      setPdfFile(file);
     }
   };
 
-  const handleDuplicate = async (id: Id<'catalogs'>) => {
-    setCloningCatalogId(id);
+  const handleToggleStatus = async (catalog: CatalogItem) => {
+    const newStatus: CatalogStatus = catalog.status === 'Published' ? 'Draft' : 'Published';
     try {
-      await duplicateCatalog({ id });
-      toast.success('Đã nhân bản catalog. Bản sao được lưu ở trạng thái Ẩn.');
-    } catch (error) {
-      console.error('Lỗi khi nhân bản:', error);
-      toast.error('Có lỗi xảy ra khi nhân bản.');
-    } finally {
-      setCloningCatalogId(null);
+      await updateMutation({
+        id: catalog._id,
+        status: newStatus,
+      });
+      toast.success(`Đã chuyển trạng thái sang: ${newStatus === 'Published' ? 'Hiện' : 'Ẩn'}`);
+    } catch {
+      toast.error('Lỗi khi cập nhật trạng thái');
+    }
+  };
+
+  const handleToggleFeatured = async (catalog: CatalogItem) => {
+    const newFeatured = !catalog.featured;
+    try {
+      await updateMutation({
+        id: catalog._id,
+        featured: newFeatured,
+      });
+      toast.success(newFeatured ? 'Đã đánh dấu nổi bật' : 'Đã bỏ đánh dấu nổi bật');
+    } catch {
+      toast.error('Lỗi khi cập nhật nổi bật');
+    }
+  };
+
+  const handleDelete = async (catalog: CatalogItem) => {
+    if (!confirm(`Bạn có chắc muốn xóa catalog "${catalog.title}"?`)) return;
+    try {
+      await deleteMutation({ id: catalog._id });
+      toast.success('Đã xóa catalog thành công');
+      if (editingCatalog?._id === catalog._id) {
+        setEditingCatalog(null);
+      }
+    } catch {
+      toast.error('Lỗi khi xóa catalog');
     }
   };
 
@@ -145,261 +158,432 @@ function CatalogsContent() {
 
     const reordered = getReorderedItems(catalogs, active.id as string, over.id as string, (c: any) => c._id);
     if (!reordered) return;
-    const updates = buildOrderUpdates(reordered, catalogs.map((c: any) => c.order ?? 0), (c: any) => c._id, (c: any, idx) => totalCount - (offset + idx));
+    
+    const updates = buildOrderUpdates(
+      reordered, 
+      catalogs.map((c: any) => c.order ?? 0), 
+      (c: any) => c._id, 
+      (c: any, idx) => catalogs.length - idx
+    );
 
     try {
-      await reorderCatalogs({ updates });
+      await reorderMutation({ updates });
       toast.success('Đã cập nhật thứ tự');
-    } catch (error) {
-      console.error('Lỗi khi sắp xếp:', error);
+    } catch {
       toast.error('Không thể lưu thứ tự mới');
     }
   };
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setDebouncedSearchTerm('');
-    setFilterStatus('');
-    setCurrentPage(1);
-    setSelectionMode('manual');
-    setManualSelectedIds([]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !slug.trim()) {
+      toast.error('Vui lòng điền tiêu đề và slug');
+      return;
+    }
+
+    if (!editingCatalog && !pdfFile && !embedUrl.trim()) {
+      toast.error('Vui lòng đính kèm file PDF hoặc dán link nhúng Heyzine');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let finalPdfStorageId = editingCatalog?.pdfStorageId;
+
+      if (pdfFile) {
+        const uploadUrl = await generateUploadUrl();
+        const pdfUploadRes = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": pdfFile.type },
+          body: pdfFile,
+        });
+        if (!pdfUploadRes.ok) throw new Error("Lỗi khi tải PDF lên");
+        const { storageId: pdfId } = await pdfUploadRes.json();
+        finalPdfStorageId = pdfId;
+      }
+
+      const payload = {
+        title: title.trim(),
+        slug: slug.trim(),
+        description: description.trim() || undefined,
+        embedUrl: embedUrl.trim() || undefined,
+        pdfStorageId: finalPdfStorageId || undefined,
+        status,
+        featured,
+        order: editingCatalog ? editingCatalog.order : 0,
+      };
+
+      if (editingCatalog) {
+        await updateMutation({ id: editingCatalog._id, ...payload });
+        toast.success('Đã lưu thay đổi thành công!');
+        setEditingCatalog(null);
+      } else {
+        await createMutation({ ...payload, order: catalogs.length + 1 });
+        toast.success('Đã tạo catalog mới thành công!');
+      }
+
+      // Reset form
+      setTitle('');
+      setSlug('');
+      setEmbedUrl('');
+      setDescription('');
+      setStatus('Draft');
+      setFeatured(false);
+      setPdfFile(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Có lỗi xảy ra khi lưu');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-5">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-blue-600" />
+            <BookOpen className="w-6 h-6 text-blue-600 animate-pulse" />
             Quản lý Catalog
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Quản lý các tài liệu catalog PDF flipbook.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/admin/catalogs/create">
-            <Button variant="accent">
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm Catalog
-            </Button>
-          </Link>
+          <p className="text-sm text-gray-500 mt-1">
+            Quản lý và nhúng tài liệu catalog Heyzine Flipbook trực tuyến (One-Page CRUD).
+          </p>
         </div>
       </div>
 
-      <Card className="p-4 bg-white dark:bg-gray-800 shadow-sm border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Tìm kiếm theo tiêu đề..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-9 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {['', 'Published', 'Draft', 'Archived'].map((status) => (
-              <button
-                key={status}
-                onClick={() => {
-                  setFilterStatus(status as CatalogStatus);
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  filterStatus === status
-                    ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
-                }`}
-              >
-                {status === '' ? 'Tất cả' : STATUS_LABEL[status]}
-              </button>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      <Card className="overflow-hidden border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative">
-        <BulkActionBar
-          entityLabel="catalog"
-          selectedCount={selectedIds.length}
-          onDelete={handleDeleteSelected}
-          onClearSelection={() => {
-            setSelectionMode('manual');
-            setManualSelectedIds([]);
-          }}
-          isLoading={isDeleting}
-        />
-
-        <div className="overflow-x-auto">
-          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <Table>
-              <TableHeader className="bg-gray-50/50 dark:bg-gray-800/50">
-                <TableRow className="border-gray-200 dark:border-gray-700">
-                  <TableHead className="w-12 text-center relative px-2">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {isSelectingAll ? <Loader2 className="w-4 h-4 animate-spin text-blue-600" /> : <SelectCheckbox checked={isSelectAllActive || (manualSelectedIds.length > 0 && manualSelectedIds.length === catalogs.length)} indeterminate={!isSelectAllActive && manualSelectedIds.length > 0 && manualSelectedIds.length < catalogs.length} onChange={toggleSelectAll} />}
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-12 text-center">Thứ tự</TableHead>
-                  <TableHead className="w-[100px]">Thumbnail</TableHead>
-                  <TableHead>Tiêu đề</TableHead>
-                  <TableHead className="w-[150px]">Lượt xem</TableHead>
-                  <TableHead className="w-[120px]">Trạng thái</TableHead>
-                  <TableHead className="w-[100px] text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center text-gray-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                        <span>Đang tải...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : catalogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center text-gray-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <BookOpen className="w-8 h-8 text-gray-400" />
-                        <span>Không tìm thấy catalog nào.</span>
-                        {(searchTerm || filterStatus) && (
-                          <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2">
-                            Xóa bộ lọc
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <SortableContext items={catalogs.map((c: any) => c._id)} strategy={verticalListSortingStrategy}>
-                    {catalogs.map((catalog: any) => {
-                      const isSelected = isSelectAllActive || manualSelectedIds.includes(catalog._id);
-                      return (
-                        <SortableTableRow key={catalog._id} id={catalog._id} disabled={!isReorderEnabled}>
-                          <TableCell className="w-12 text-center p-0">
-                            <div className="h-full w-full flex items-center justify-center">
-                              <SelectCheckbox checked={isSelected} onChange={() => toggleSelection(catalog._id)} />
-                            </div>
-                          </TableCell>
-                          <TableCell className="w-12 text-center">
-                            <AdminDragHandle disabled={!isReorderEnabled} />
-                          </TableCell>
-                          <TableCell>
-                            <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                              <img src={catalog.thumbnail} alt={catalog.title} className="w-full h-full object-cover" />
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-900 dark:text-white line-clamp-1">{catalog.title}</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-1">/{catalog.slug}</span>
-                              {catalog.featured && (
-                                <span className="inline-flex mt-1 items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 w-fit">
-                                  Nổi bật
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-gray-600 dark:text-gray-400">{catalog.views.toLocaleString()}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={catalog.status === 'Published' ? 'success' : catalog.status === 'Draft' ? 'secondary' : 'default'}
-                              className={
-                                catalog.status === 'Published'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-0'
-                                  : catalog.status === 'Draft'
-                                    ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-0'
-                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-0'
-                              }
-                            >
-                              {STATUS_LABEL[catalog.status]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              {catalog.status === 'Published' && (
-                                <Link href={`/catalogs/${catalog.slug}`} target="_blank">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="Xem trên website">
-                                    <ExternalLink className="w-4 h-4" />
-                                  </Button>
-                                </Link>
-                              )}
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="Nhân bản" onClick={() => handleDuplicate(catalog._id)} disabled={cloningCatalogId === catalog._id}>
-                                {cloningCatalogId === catalog._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
-                              </Button>
-                              <Link href={`/admin/catalogs/${catalog._id}/edit`}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="Chỉnh sửa">
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                              </Link>
-                            </div>
-                          </TableCell>
-                        </SortableTableRow>
-                      );
-                    })}
-                  </SortableContext>
-                )}
-              </TableBody>
-            </Table>
-          </DndContext>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Hiển thị <span className="font-medium">{Math.min(offset + 1, totalCount)}</span> - <span className="font-medium">{Math.min(offset + resolvedCatalogsPerPage, totalCount)}</span> trong tổng số <span className="font-medium">{totalCount}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Số dòng:</span>
-                <div className="relative">
-                  <select
-                    value={resolvedCatalogsPerPage}
-                    onChange={(e) => {
-                      setPageSizeOverride(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm rounded-md py-1 pl-2 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    {[12, 24, 48, 96].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Cột trái: Danh sách (Dnd) */}
+        <div className="lg:col-span-7 space-y-4">
+          <Card className="shadow-sm border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+            <CardHeader className="py-4 px-6 border-b border-gray-100 dark:border-gray-800">
+              <CardTitle className="text-base font-semibold">Danh sách Catalog ({catalogs.length})</CardTitle>
+            </CardHeader>
+            
+            <div className="p-2 sm:p-4">
+              {isLoading ? (
+                <div className="flex h-48 items-center justify-center text-gray-500">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-2" />
+                  <span>Đang tải danh sách...</span>
                 </div>
-              </div>
-
-              <div className="flex gap-1">
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8">
-                  Trước
-                </Button>
-                {generatePaginationItems(currentPage, totalPages).map((item, idx) =>
-                  item === 'ellipsis' ? (
-                    <span key={`ellipsis-${idx}`} className="px-2 py-1 text-gray-400">
-                      ...
-                    </span>
-                  ) : (
-                    <Button key={item} variant={currentPage === item ? 'accent' : 'outline'} size="sm" onClick={() => setCurrentPage(item as number)} className="h-8 w-8 p-0">
-                      {item}
-                    </Button>
-                  )
-                )}
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8">
-                  Sau
-                </Button>
-              </div>
+              ) : catalogs.length === 0 ? (
+                <div className="flex h-48 flex-col items-center justify-center text-gray-400 gap-2 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl">
+                  <BookOpen className="w-8 h-8 text-gray-300" />
+                  <span>Chưa có catalog nào được tạo.</span>
+                </div>
+              ) : (
+                <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={catalogs.map((c: any) => c._id)} strategy={verticalListSortingStrategy}>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {catalogs.map((catalog: any) => (
+                        <SortableRowItem
+                          key={catalog._id}
+                          catalog={catalog}
+                          isEditing={editingCatalog?._id === catalog._id}
+                          onEdit={setEditingCatalog}
+                          onDelete={handleDelete}
+                          onToggleStatus={handleToggleStatus}
+                          onToggleFeatured={handleToggleFeatured}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
             </div>
+          </Card>
+        </div>
+
+        {/* Cột phải: Form Inline */}
+        <div className="lg:col-span-5">
+          <Card className={`shadow-sm transition-all duration-300 border bg-white dark:bg-gray-900 ${
+            editingCatalog 
+              ? 'border-blue-500/50 shadow-blue-500/5 dark:border-blue-900/50 bg-blue-50/10' 
+              : 'border-gray-200 dark:border-gray-800'
+          }`}>
+            <CardHeader className="py-4 px-6 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                {editingCatalog ? (
+                  <>
+                    <Edit className="w-4 h-4 text-blue-600" />
+                    Cập nhật Catalog
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 text-emerald-600" />
+                    Thêm Catalog Mới
+                  </>
+                )}
+              </CardTitle>
+              {editingCatalog && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => setEditingCatalog(null)}
+                  title="Hủy chỉnh sửa, quay về thêm mới"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </CardHeader>
+
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Tiêu đề */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="title" className="text-xs font-semibold">Tiêu đề *</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={handleTitleChange}
+                    placeholder="Ví dụ: Catalog Thiết Bị Vệ Sinh 2024"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Slug */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="slug" className="text-xs font-semibold">Đường dẫn tĩnh (Slug) *</Label>
+                  <Input
+                    id="slug"
+                    value={slug}
+                    onChange={(e) => setSlug(generateSlug(e.target.value))}
+                    placeholder="duong-dan-catalog"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Heyzine URL */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="embedUrl" className="text-xs font-semibold">Link nhúng Heyzine Flipbook</Label>
+                  <Input
+                    id="embedUrl"
+                    value={embedUrl}
+                    onChange={(e) => setEmbedUrl(e.target.value)}
+                    placeholder="https://heyzine.com/flip-book/..."
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-[11px] text-gray-500 leading-normal">
+                    Dán link Heyzine để hiển thị trực tiếp sách lật lôi cuốn.
+                  </p>
+                </div>
+
+                {/* File PDF */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="pdf" className="text-xs font-semibold">
+                    {editingCatalog ? 'Thay đổi file PDF đính kèm' : 'File PDF đính kèm'}
+                  </Label>
+                  <Input
+                    id="pdf"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handlePdfChange}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-[11px] text-gray-500 leading-normal">
+                    {editingCatalog && editingCatalog.pdfStorageId && (
+                      <span className="text-emerald-600 block mb-0.5">✓ Đã đính kèm file PDF gốc.</span>
+                    )}
+                    Chọn file PDF gốc nếu muốn khách hàng tải về.
+                  </p>
+                </div>
+
+                {/* Mô tả */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="description" className="text-xs font-semibold">Mô tả ngắn</Label>
+                  <textarea
+                    id="description"
+                    className="flex min-h-[70px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Nhập mô tả ngắn gọn..."
+                    rows={2}
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Checkbox Nổi bật & select status */}
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      checked={featured}
+                      onChange={(e) => setFeatured(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    />
+                    <Label htmlFor="featured" className="text-xs cursor-pointer select-none">Đánh dấu Nổi bật</Label>
+                  </div>
+
+                  <div className="space-y-1">
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as CatalogStatus)}
+                      className="w-full flex h-8 items-center justify-between rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                      disabled={isSubmitting}
+                    >
+                      <option value="Published">Đã xuất bản (Hiện)</option>
+                      <option value="Draft">Bản nháp (Ẩn)</option>
+                      <option value="Archived">Lưu trữ</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-3 flex gap-2 justify-end">
+                  {editingCatalog && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setEditingCatalog(null)}
+                      disabled={isSubmitting}
+                    >
+                      Hủy sửa
+                    </Button>
+                  )}
+                  <Button 
+                    type="submit" 
+                    variant="accent" 
+                    size="sm"
+                    className="min-w-[100px] flex items-center justify-center gap-1.5"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : editingCatalog ? (
+                      'Cập nhật'
+                    ) : (
+                      'Tạo mới'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Subcomponent for Dnd Row Item
+interface SortableRowItemProps {
+  catalog: CatalogItem;
+  isEditing: boolean;
+  onEdit: (catalog: CatalogItem) => void;
+  onDelete: (catalog: CatalogItem) => void;
+  onToggleStatus: (catalog: CatalogItem) => void;
+  onToggleFeatured: (catalog: CatalogItem) => void;
+}
+
+function SortableRowItem({ 
+  catalog, 
+  isEditing, 
+  onEdit, 
+  onDelete, 
+  onToggleStatus, 
+  onToggleFeatured 
+}: SortableRowItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: catalog._id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 1,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={`flex items-center justify-between py-3 px-2 rounded-lg transition-colors ${
+        isEditing 
+          ? 'bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/50' 
+          : 'hover:bg-gray-50/70 dark:hover:bg-gray-800/40 border border-transparent'
+      }`}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <AdminDragHandle listeners={listeners} attributes={attributes} />
+        
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm text-gray-900 dark:text-white line-clamp-1">
+              {catalog.title}
+            </span>
+            {catalog.featured && (
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" />
+            )}
           </div>
-        )}
-      </Card>
+          <span className="text-xs text-gray-400 dark:text-gray-500 block truncate mt-0.5">
+            /{catalog.slug}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {/* Toggle Status badge (quick toggle status) */}
+        <button 
+          type="button"
+          onClick={() => onToggleStatus(catalog)}
+          className="focus:outline-none"
+        >
+          <Badge
+            variant={catalog.status === 'Published' ? 'success' : 'secondary'}
+            className="cursor-pointer select-none text-[10px] py-0.5 px-2 font-medium"
+          >
+            {catalog.status === 'Published' ? 'Đang hiện' : 'Đang ẩn'}
+          </Badge>
+        </button>
+
+        {/* Toggle Featured badge */}
+        <button 
+          type="button"
+          onClick={() => onToggleFeatured(catalog)}
+          className="focus:outline-none"
+          title="Bật/Tắt Nổi bật"
+        >
+          <Badge
+            variant={catalog.featured ? 'warning' : 'outline'}
+            className="cursor-pointer select-none text-[10px] py-0.5 px-2 font-medium border-dashed"
+          >
+            {catalog.featured ? 'Nổi bật' : 'Thường'}
+          </Badge>
+        </button>
+
+        {/* Actions buttons */}
+        <div className="flex items-center gap-0.5 border-l border-gray-100 dark:border-gray-800 pl-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-md text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+            onClick={() => onEdit(catalog)}
+            title="Sửa"
+          >
+            <Edit className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+            onClick={() => onDelete(catalog)}
+            title="Xóa"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
