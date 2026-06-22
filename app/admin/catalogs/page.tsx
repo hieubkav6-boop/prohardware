@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { BookOpen, Edit, Loader2, Plus, Trash2, X, Star } from 'lucide-react';
+import { BookOpen, Edit, Loader2, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../components/ui';
@@ -66,7 +66,6 @@ function CatalogsCRUDContent() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<CatalogStatus>('Draft');
-  const [featured, setFeatured] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [extractionProgress, setExtractionProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -84,7 +83,6 @@ function CatalogsCRUDContent() {
       setCategory(editingCatalog.category || '');
       setDescription(editingCatalog.description || '');
       setStatus(editingCatalog.status);
-      setFeatured(editingCatalog.featured || false);
       setPdfFile(null);
     } else {
       setTitle('');
@@ -92,7 +90,6 @@ function CatalogsCRUDContent() {
       setCategory('');
       setDescription('');
       setStatus('Draft');
-      setFeatured(false);
       setPdfFile(null);
     }
     setExtractionProgress(null);
@@ -127,19 +124,6 @@ function CatalogsCRUDContent() {
       toast.success(`Đã chuyển trạng thái sang: ${newStatus === 'Published' ? 'Hiện' : 'Ẩn'}`);
     } catch {
       toast.error('Lỗi khi cập nhật trạng thái');
-    }
-  };
-
-  const handleToggleFeatured = async (catalog: CatalogItem) => {
-    const newFeatured = !catalog.featured;
-    try {
-      await updateMutation({
-        id: catalog._id,
-        featured: newFeatured,
-      });
-      toast.success(newFeatured ? 'Đã đánh dấu nổi bật' : 'Đã bỏ đánh dấu nổi bật');
-    } catch {
-      toast.error('Lỗi khi cập nhật nổi bật');
     }
   };
 
@@ -280,7 +264,7 @@ function CatalogsCRUDContent() {
         pageImages: finalPageImages ? (finalPageImages.filter((img): img is string => img !== null) as Id<'_storage'>[]) : undefined,
         totalPages: finalTotalPages,
         status,
-        featured,
+        featured: false,
         order: editingCatalog ? editingCatalog.order : 0,
       };
 
@@ -299,7 +283,6 @@ function CatalogsCRUDContent() {
       setCategory('');
       setDescription('');
       setStatus('Draft');
-      setFeatured(false);
       setPdfFile(null);
     } catch (err: any) {
       toast.error(err.message || 'Đã có lỗi xảy ra trong quá trình lưu trữ');
@@ -355,7 +338,6 @@ function CatalogsCRUDContent() {
                           onEdit={setEditingCatalog}
                           onDelete={handleDelete}
                           onToggleStatus={handleToggleStatus}
-                          onToggleFeatured={handleToggleFeatured}
                         />
                       ))}
                     </div>
@@ -472,41 +454,27 @@ function CatalogsCRUDContent() {
                   <Label htmlFor="description" className="text-xs font-semibold">Mô tả ngắn</Label>
                   <textarea
                     id="description"
-                    className="flex min-h-[70px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C21A1A] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
+                    className="flex min-h-[70px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C21A1A] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Nhập mô tả ngắn gọn..."
-                    rows={2}
                     disabled={isSubmitting}
                   />
                 </div>
 
-                {/* Checkbox Nổi bật & select status */}
-                <div className="grid grid-cols-2 gap-4 pt-1">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="featured"
-                      checked={featured}
-                      onChange={(e) => setFeatured(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-[#C21A1A] focus:ring-[#C21A1A]"
-                      disabled={isSubmitting}
-                    />
-                    <Label htmlFor="featured" className="text-xs cursor-pointer select-none">Đánh dấu Nổi bật</Label>
-                  </div>
-
-                  <div className="space-y-1">
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as CatalogStatus)}
-                      className="w-full flex h-8 items-center justify-between rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                      disabled={isSubmitting}
-                    >
-                      <option value="Published">Đã xuất bản (Hiện)</option>
-                      <option value="Draft">Bản nháp (Ẩn)</option>
-                      <option value="Archived">Lưu trữ</option>
-                    </select>
-                  </div>
+                {/* Trạng thái hiển thị */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="status" className="text-xs font-semibold">Trạng thái hiển thị</Label>
+                  <select
+                    id="status"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as CatalogStatus)}
+                    className="w-full flex h-10 items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                    disabled={isSubmitting}
+                  >
+                    <option value="Published">Đã xuất bản (Hiện)</option>
+                    <option value="Draft">Bản nháp (Ẩn)</option>
+                    <option value="Archived">Lưu trữ</option>
+                  </select>
                 </div>
 
                 <div className="pt-3 flex gap-2 justify-end">
@@ -553,7 +521,6 @@ interface SortableRowItemProps {
   onEdit: (catalog: CatalogItem) => void;
   onDelete: (catalog: CatalogItem) => void;
   onToggleStatus: (catalog: CatalogItem) => void;
-  onToggleFeatured: (catalog: CatalogItem) => void;
 }
 
 function SortableRowItem({ 
@@ -561,8 +528,7 @@ function SortableRowItem({
   isEditing, 
   onEdit, 
   onDelete, 
-  onToggleStatus, 
-  onToggleFeatured 
+  onToggleStatus 
 }: SortableRowItemProps) {
   const {
     attributes,
@@ -598,9 +564,6 @@ function SortableRowItem({
             <span className="font-medium text-sm text-gray-900 dark:text-white line-clamp-1">
               {catalog.title}
             </span>
-            {catalog.featured && (
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" />
-            )}
           </div>
           {catalog.category && (
             <span className="text-xs text-emerald-600 dark:text-emerald-500 block truncate mt-0.5 font-medium">
@@ -622,21 +585,6 @@ function SortableRowItem({
             className="cursor-pointer select-none text-[10px] py-0.5 px-2 font-medium"
           >
             {catalog.status === 'Published' ? 'Đang hiện' : 'Đang ẩn'}
-          </Badge>
-        </button>
-
-        {/* Toggle Featured badge */}
-        <button 
-          type="button"
-          onClick={() => onToggleFeatured(catalog)}
-          className="focus:outline-none"
-          title="Bật/Tắt Nổi bật"
-        >
-          <Badge
-            variant={catalog.featured ? 'warning' : 'outline'}
-            className="cursor-pointer select-none text-[10px] py-0.5 px-2 font-medium border-dashed"
-          >
-            {catalog.featured ? 'Nổi bật' : 'Thường'}
           </Badge>
         </button>
 
