@@ -108,7 +108,7 @@ function normalizeValue(value: unknown): string {
 
 function containsStorageId(value: unknown, storageId: string): boolean {
   if (value === null || value === undefined) {return false;}
-  if (typeof value === "string") {return value === storageId;}
+  if (typeof value === "string") {return value === storageId || value.includes(storageId);}
   if (typeof value === "number" || typeof value === "boolean") {return false;}
   if (Array.isArray(value)) {return value.some(item => containsStorageId(item, storageId));}
   if (typeof value === "object") {
@@ -289,7 +289,12 @@ async function resolveMediaUsageMap(
 
   users.forEach(record => collectUsageMatches(usageMap, candidates, "users", record, "avatar", record.avatar));
   customers.forEach(record => collectUsageMatches(usageMap, candidates, "customers", record, "avatar", record.avatar));
-  productCategories.forEach(record => collectUsageMatches(usageMap, candidates, "productCategories", record, "image", record.image));
+  productCategories.forEach(record => {
+    collectUsageMatches(usageMap, candidates, "productCategories", record, "image", record.image);
+    collectUsageMatches(usageMap, candidates, "productCategories", record, "description", record.description);
+    collectUsageMatches(usageMap, candidates, "productCategories", record, "filterFooterContent", record.filterFooterContent);
+    collectUsageMatches(usageMap, candidates, "productCategories", record, "productDetailSuffixContent", record.productDetailSuffixContent);
+  });
   products.forEach(record => {
     collectUsageMatches(usageMap, candidates, "products", record, "imageStorageId", record.imageStorageId);
     collectUsageMatches(usageMap, candidates, "products", record, "imageStorageIds", record.imageStorageIds);
@@ -308,7 +313,10 @@ async function resolveMediaUsageMap(
     collectUsageMatches(usageMap, candidates, "productSupplementalContents", record, "preContent", record.preContent);
     collectUsageMatches(usageMap, candidates, "productSupplementalContents", record, "postContent", record.postContent);
   });
-  postCategories.forEach(record => collectUsageMatches(usageMap, candidates, "postCategories", record, "thumbnail", record.thumbnail));
+  postCategories.forEach(record => {
+    collectUsageMatches(usageMap, candidates, "postCategories", record, "thumbnail", record.thumbnail);
+    collectUsageMatches(usageMap, candidates, "postCategories", record, "description", record.description);
+  });
   posts.forEach(record => {
     collectUsageMatches(usageMap, candidates, "posts", record, "thumbnailStorageId", record.thumbnailStorageId);
     collectUsageMatches(usageMap, candidates, "posts", record, "thumbnail", record.thumbnail);
@@ -316,7 +324,10 @@ async function resolveMediaUsageMap(
     collectUsageMatches(usageMap, candidates, "posts", record, "markdownRender", record.markdownRender);
     collectUsageMatches(usageMap, candidates, "posts", record, "htmlRender", record.htmlRender);
   });
-  serviceCategories.forEach(record => collectUsageMatches(usageMap, candidates, "serviceCategories", record, "thumbnail", record.thumbnail));
+  serviceCategories.forEach(record => {
+    collectUsageMatches(usageMap, candidates, "serviceCategories", record, "thumbnail", record.thumbnail);
+    collectUsageMatches(usageMap, candidates, "serviceCategories", record, "description", record.description);
+  });
   services.forEach(record => {
     collectUsageMatches(usageMap, candidates, "services", record, "thumbnailStorageId", record.thumbnailStorageId);
     collectUsageMatches(usageMap, candidates, "services", record, "thumbnail", record.thumbnail);
@@ -324,7 +335,10 @@ async function resolveMediaUsageMap(
     collectUsageMatches(usageMap, candidates, "services", record, "markdownRender", record.markdownRender);
     collectUsageMatches(usageMap, candidates, "services", record, "htmlRender", record.htmlRender);
   });
-  courseCategories.forEach(record => collectUsageMatches(usageMap, candidates, "courseCategories", record, "thumbnail", record.thumbnail));
+  courseCategories.forEach(record => {
+    collectUsageMatches(usageMap, candidates, "courseCategories", record, "thumbnail", record.thumbnail);
+    collectUsageMatches(usageMap, candidates, "courseCategories", record, "description", record.description);
+  });
   courses.forEach(record => {
     collectUsageMatches(usageMap, candidates, "courses", record, "thumbnailStorageId", record.thumbnailStorageId);
     collectUsageMatches(usageMap, candidates, "courses", record, "thumbnail", record.thumbnail);
@@ -332,7 +346,10 @@ async function resolveMediaUsageMap(
     collectUsageMatches(usageMap, candidates, "courses", record, "markdownRender", record.markdownRender);
     collectUsageMatches(usageMap, candidates, "courses", record, "htmlRender", record.htmlRender);
   });
-  projectCategories.forEach(record => collectUsageMatches(usageMap, candidates, "projectCategories", record, "thumbnail", record.thumbnail));
+  projectCategories.forEach(record => {
+    collectUsageMatches(usageMap, candidates, "projectCategories", record, "thumbnail", record.thumbnail);
+    collectUsageMatches(usageMap, candidates, "projectCategories", record, "description", record.description);
+  });
   projects.forEach(record => {
     collectUsageMatches(usageMap, candidates, "projects", record, "thumbnailStorageId", record.thumbnailStorageId);
     collectUsageMatches(usageMap, candidates, "projects", record, "imageStorageIds", record.imageStorageIds);
