@@ -2000,6 +2000,7 @@ export default defineSchema({
 
     // PDF Storage (kế thừa từ Ca-Mau-DST-Digital-Library)
     pdfStorageId: v.id("_storage"),
+    category: v.optional(v.string()),
     pageImages: v.optional(v.array(
       v.union(v.id("_storage"), v.null())
     )),

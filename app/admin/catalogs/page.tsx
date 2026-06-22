@@ -33,6 +33,7 @@ interface CatalogItem {
   title: string;
   slug: string;
   description?: string;
+  category?: string;
   pdfStorageId?: Id<'_storage'>;
   pdfUrl?: string | null;
   status: CatalogStatus;
@@ -62,6 +63,7 @@ function CatalogsCRUDContent() {
   const [editingCatalog, setEditingCatalog] = useState<CatalogItem | null>(null);
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
+  const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<CatalogStatus>('Draft');
   const [featured, setFeatured] = useState(false);
@@ -79,6 +81,7 @@ function CatalogsCRUDContent() {
     if (editingCatalog) {
       setTitle(editingCatalog.title);
       setSlug(editingCatalog.slug);
+      setCategory(editingCatalog.category || '');
       setDescription(editingCatalog.description || '');
       setStatus(editingCatalog.status);
       setFeatured(editingCatalog.featured || false);
@@ -86,6 +89,7 @@ function CatalogsCRUDContent() {
     } else {
       setTitle('');
       setSlug('');
+      setCategory('');
       setDescription('');
       setStatus('Draft');
       setFeatured(false);
@@ -240,7 +244,8 @@ function CatalogsCRUDContent() {
           } as any).promise;
           
           const blob = await new Promise<Blob | null>((resolve) => {
-            canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85);
+            // Trích xuất thành WebP để dung lượng ảnh cực kỳ nhẹ và load nhanh hơn JPEG
+            canvas.toBlob((b) => resolve(b), 'image/webp', 0.85);
           });
           
           if (!blob) {
@@ -250,7 +255,7 @@ function CatalogsCRUDContent() {
           const uploadUrlPage = await generateUploadUrl();
           const pageUploadRes = await fetch(uploadUrlPage, {
             method: "POST",
-            headers: { "Content-Type": "image/jpeg" },
+            headers: { "Content-Type": "image/webp" },
             body: blob,
           });
           
@@ -268,6 +273,7 @@ function CatalogsCRUDContent() {
       const payload = {
         title: title.trim(),
         slug: slug.trim(),
+        category: category.trim() || undefined,
         description: description.trim() || undefined,
         pdfStorageId: finalPdfStorageId!,
         pageImages: finalPageImages ? (finalPageImages.filter((img): img is string => img !== null) as Id<'_storage'>[]) : undefined,
@@ -289,6 +295,7 @@ function CatalogsCRUDContent() {
       // Reset form
       setTitle('');
       setSlug('');
+      setCategory('');
       setDescription('');
       setStatus('Draft');
       setFeatured(false);
@@ -416,6 +423,18 @@ function CatalogsCRUDContent() {
                     onChange={(e) => setSlug(generateSlug(e.target.value))}
                     placeholder="duong-dan-catalog"
                     required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Danh mục */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="category" className="text-xs font-semibold">Danh mục phân loại</Label>
+                  <Input
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="Ví dụ: Thiết bị vệ sinh, Phụ kiện..."
                     disabled={isSubmitting}
                   />
                 </div>
