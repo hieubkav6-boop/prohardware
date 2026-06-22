@@ -1,75 +1,72 @@
-# Spec: Cải tiến Module Catalogs sang One-Page CRUD & Tối giản hóa
+# Spec: Cải tiến Module Catalogs sang dạng Thư viện SPA & Bỏ Heyzine
 
 # I. Primer
 
 ## 1. TL;DR kiểu Feynman
-Thay vì chia nhỏ trang quản lý Catalog thành nhiều trang rườm rà (danh sách, trang tạo mới, trang chỉnh sửa), chúng ta sẽ gộp tất cả lại vào **một trang duy nhất (One-Page CRUD)** giống như trang quản lý Menu. Giao diện quản trị sẽ cực kỳ tinh gọn: bên trái là danh sách kéo thả sắp xếp thứ tự và các nút bật/tắt nhanh, bên phải là form thêm/sửa gọn nhẹ. Các trường thừa thãi như Thumbnail (không hiển thị) và SEO Meta (tự động hóa) sẽ bị loại bỏ hoàn toàn để admin không phải nhập thủ công phiền phức.
+Chúng ta sẽ chuyển trang hiển thị Catalog `/catalogs` thành giao diện **Thư viện số chạy trên một trang duy nhất (Single Page App - SPA)** giống như dự án `Ca-Mau-DST-Digital-Library`. Trang sẽ gồm: một Sidebar bên trái liệt kê danh mục catalog, và màn hình chính bên phải hiển thị trực tiếp sách lật lướt trang mượt mà (sử dụng ảnh trích xuất từ PDF gốc thông qua thư viện `react-pageflip`). Chúng ta sẽ loại bỏ hoàn toàn mã nhúng Heyzine Flipbook (iframe ngoài gây load cực kỳ chậm và nặng).
 
 ## 2. Elaboration & Self-Explanation
-Catalog bản chất là một danh sách tài liệu sách lật lặp lại trên duy nhất một trang `/catalogs`. Việc thiết kế hệ thống CRUD phân trang phức tạp là không cần thiết.
-Chúng ta sẽ thực hiện tinh giản hóa:
-- **Loại bỏ các trường dư thừa:** Bỏ hoàn toàn ảnh đại diện (Thumbnail) và SEO Meta trong form nhập liệu. SEO Meta sẽ được tự động tạo dựa trên tiêu đề của Catalog (Ví dụ: `metaTitle = title + " | AAA Pro Hardware"`, `metaDescription = description`).
-- **Gộp giao diện CRUD về 1 trang:** Trang `/admin/catalogs` sẽ chia làm 2 cột:
-  - Cột trái: Danh sách các Catalog, kéo thả Dnd để sắp xếp thứ tự nhanh, có công tắc/nút check bật tắt Hiện/Ẩn và Nổi bật nhanh không cần tải lại trang.
-  - Cột phải: Form động. Mặc định là Form thêm mới, khi click nút "Sửa" ở danh sách bên trái, form sẽ chuyển thành "Chỉnh sửa" với dữ liệu tương ứng.
-- **Xóa bỏ các file con thừa:** Xóa các thư mục con `/admin/catalogs/[id]/edit` và `/admin/catalogs/create` để vệ sinh workspace.
-- **Cập nhật config module:** Sửa file cấu hình module `/system/modules/catalogs` để ẩn các trường đã bị loại bỏ.
+Hiện trạng trang `/catalogs` bị load chậm là do việc nhúng nhiều iframe Heyzine Flipbook cùng lúc. Mỗi iframe Heyzine tải hàng tá file JS, CSS và render 3D độc lập, dẫn đến đơ trình duyệt và tốn băng thông.
+
+Giải pháp tối ưu:
+- **Bỏ hoàn toàn Heyzine:** Không sử dụng link nhúng Heyzine. Quay lại dùng file PDF và tự động trích xuất các trang thành ảnh JPEG trên Convex Storage.
+- **Khôi phục PDF extraction ở Admin:** Trong form Admin, trường file PDF sẽ là bắt buộc khi tạo mới. Hệ thống sẽ tự động dùng thư viện `pdfjs-dist` tại client để cắt từng trang PDF thành ảnh rồi tải lên Convex, lưu trữ vào mảng `pageImages`.
+- **Giao diện Client dạng SPA (1 trang duy nhất):** Trang `/catalogs` sẽ chia làm 2 phần:
+  - **Bên trái (Sidebar):** Danh sách các Catalog đang bật hiển thị. Khi click chọn catalog nào, catalog đó sẽ chuyển sang trạng thái active. Hệ thống tự động chọn catalog đầu tiên khi mở trang.
+  - **Bên phải (Main Viewer):** Hiển thị sách lật `CatalogFlipbook` dùng chính các ảnh trích xuất từ `pageImages` của catalog được chọn. Có nút tải bản PDF gốc. Không chuyển hướng trang, không iframe Heyzine, load cực kỳ nhanh.
+- **Admin One-Page CRUD:** Vẫn giữ nguyên trang CRUD tinh gọn 1 trang tại `/admin/catalogs` nhưng khôi phục trường PDF bắt buộc và bỏ trường nhập Heyzine URL.
 
 ## 3. Concrete Examples & Analogies
-- **Ví dụ cụ thể:** Admin muốn tạo một Catalog mới. Họ chỉ cần nhập Tiêu đề và dán link Heyzine vào form ở cột bên phải rồi bấm "Tạo mới". Catalog lập tức xuất hiện ở danh sách bên trái. Họ có thể kéo nó lên trên đầu để hiển thị trước, hoặc click công tắc để tạm ẩn đi ngay lập tức.
-- **Analogy:** Thay vì đi làm thủ tục hành chính ở nhiều phòng ban (mở nhiều trang), chúng ta đến cơ chế "một cửa" (One-Page CRUD) nơi mọi việc từ điền tờ khai, nộp hồ sơ, duyệt và nhận kết quả đều diễn ra tại một bàn duy nhất.
+- **Ví dụ cụ thể:** Khi khách hàng truy cập `/catalogs`, họ sẽ thấy ngay cuốn Catalog đầu tiên được mở ra ở giữa màn hình để đọc ngay lập tức. Bên cạnh có một menu danh sách. Họ muốn xem catalog khác chỉ việc click vào tên catalog đó trong menu, trang sách lật ở giữa sẽ đổi nội dung tức thì không cần load lại toàn bộ trang.
+- **Analogy:** Thay vì phát nhiều video Youtube cùng lúc trên một màn hình gây đơ máy, chúng ta thiết kế một danh sách phát (playlist) bên cạnh và một trình phát video duy nhất ở giữa. Click vào đâu thì phát video đó.
 
 ---
 
 # II. Audit Summary (Tóm tắt kiểm tra)
-- **Cấu hình Menu Admin:** Sidebar liên kết đến `/admin/catalogs`.
-- **Cấu hình Module:** `@/lib/modules/configs/catalogs.config.ts` chứa cấu hình các trường runtimeConfig.
-- **Các file thừa cần xóa:**
-  - `app/admin/catalogs/create/page.tsx`
-  - `app/admin/catalogs/[id]/edit/page.tsx`
-  - `app/admin/catalogs/components/CatalogForm.tsx` (gộp code form vào trang chính)
+- **Đường dẫn client:** Trang `/catalogs` sẽ là trang SPA duy nhất chứa Sidebar và Flipbook Viewer. Trang `/catalogs/[slug]` không cần thiết nữa và có thể chuyển hướng về trang `/catalogs` hoặc hiển thị catalog tương ứng.
+- **Cấu hình database:** S schema Convex bảng `catalogs` cần khôi phục `pdfStorageId` là bắt buộc và bỏ trường `embedUrl`.
+- **Thư viện PDF.js:** Trình trích xuất PDF sang ảnh ở client cần hoạt động ổn định và tích hợp mượt mà trong form.
 
 ---
 
 # III. Root Cause & Counter-Hypothesis (Nguyên nhân gốc & Giả thuyết đối chứng)
-- **Triệu chứng:** Giao diện CRUD cũ quá cồng kềnh, nhiều trường dữ liệu thừa (thumbnail không hiển thị ở client, SEO bắt nhập thủ công tốn thời gian), phân tán qua nhiều route gây khó quản lý và không mượt mà.
-- **Độ tin cậy:** High (Dựa trực tiếp trên phản hồi thực tế của người dùng).
+- **Triệu chứng:** Trang `/catalogs` load cực kỳ lâu, đơ trình duyệt.
+- **Nguyên nhân chính:** Do render đồng thời nhiều iframe Heyzine Flipbook ngoài. Tải Heyzine CDN và logic 3D lặp lại quá nhiều lần.
+- **Độ tin cậy:** High (Đã được xác minh).
 
 ---
 
 # IV. Proposal (Đề xuất)
-1. **Tinh giản config module:** Sửa `lib/modules/configs/catalogs.config.ts` để loại bỏ `thumbnail`, `metaTitle`, `metaDescription` khỏi cấu hình.
-2. **Xây dựng One-Page CRUD:** Viết lại toàn bộ `app/admin/catalogs/page.tsx` theo thiết kế 2 cột:
-   - Bên trái: Danh sách sắp xếp Dnd.
-   - Bên phải: Card form Thêm/Sửa inline.
-3. **Xóa tệp dư thừa:** Xóa bỏ hoàn toàn các file trang `create`, `edit` riêng lẻ.
-4. **Tự động hóa SEO:** Cập nhật API client `/catalogs/[slug]/page.tsx` để tự sinh metaTitle và metaDescription từ title và description của Catalog thay vì đọc từ db.
+1. **Schema Convex:** Cập nhật `convex/schema.ts` khôi phục `pdfStorageId: v.id("_storage")` và bỏ `embedUrl`.
+2. **API CRUD Convex:** Cập nhật `convex/catalogs.ts` mutation `create` và `update` tương ứng, loại bỏ tham số `embedUrl`.
+3. **Cấu hình Module:** Cập nhật `lib/modules/configs/catalogs.config.ts` loại bỏ trường `embedUrl`.
+4. **Admin One-Page CRUD:** Cập nhật `app/admin/catalogs/page.tsx` gộp lại luồng xử lý trích xuất PDF tự động (`processAndUploadPdf`) và loại bỏ input Heyzine URL.
+5. **Giao diện Client SPA:** Thiết kế lại `app/(site)/catalogs/page.tsx` thành layout 2 phần: Sidebar chọn Catalog và Main Container hiển thị sách lật `CatalogFlipbook`.
 
 ---
 
 # V. Files Impacted (Tệp bị ảnh hưởng)
 
 ### Sửa:
-1. [lib/modules/configs/catalogs.config.ts](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/lib/modules/configs/catalogs.config.ts)
-   - Tối giản hóa runtimeConfig, loại bỏ trường thumbnail và SEO.
-2. [app/admin/catalogs/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/app/admin/catalogs/page.tsx)
-   - Viết lại thành trang quản trị One-Page CRUD 2 cột (Danh sách + Form inline).
-3. [app/(site)/catalogs/[slug]/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/app/%28site%29/catalogs/%5Bslug%5D/page.tsx)
-   - Cập nhật hàm `generateMetadata` để tự động sinh SEO dựa trên dữ liệu Catalog.
-
-### Xóa:
-1. [app/admin/catalogs/create/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/app/admin/catalogs/create/page.tsx)
-2. [app/admin/catalogs/[id]/edit/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/app/admin/catalogs/%5Bid%5D/edit/page.tsx)
-3. [app/admin/catalogs/components/CatalogForm.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/app/admin/catalogs/components/CatalogForm.tsx)
+1. [convex/schema.ts](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/convex/schema.ts)
+   - Khôi phục `pdfStorageId` bắt buộc, bỏ `embedUrl`.
+2. [convex/catalogs.ts](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/convex/catalogs.ts)
+   - Cập nhật mutation `create` và `update` để bỏ `embedUrl`.
+3. [lib/modules/configs/catalogs.config.ts](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/lib/modules/configs/catalogs.config.ts)
+   - Cập nhật fields config của module.
+4. [app/admin/catalogs/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/app/admin/catalogs/page.tsx)
+   - Tích hợp trích xuất PDF tự động vào form CRUD, loại bỏ input Heyzine URL.
+5. [app/(site)/catalogs/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/prohardware/app/%28site%29/catalogs/page.tsx)
+   - Chuyển thành giao diện SPA Thư viện sách lật (Sidebar + Viewer).
 
 ---
 
 # VI. Execution Preview (Xem trước thực thi)
-1. Cập nhật file cấu hình module `catalogs.config.ts`.
-2. Viết lại trang `app/admin/catalogs/page.tsx` với giao diện One-Page CRUD.
-3. Xóa các file thừa trong thư mục `/admin/catalogs`.
-4. Cập nhật tự động hóa SEO trong `app/(site)/catalogs/[slug]/page.tsx`.
-5. Chạy test typecheck để đảm bảo không lỗi biên dịch.
+1. Cập nhật schema Convex và mutation API.
+2. Cấu hình lại module `catalogs.config.ts`.
+3. Cập nhật trang quản lý admin `app/admin/catalogs/page.tsx`.
+4. Viết lại trang client `app/(site)/catalogs/page.tsx`.
+5. Review và biên dịch kiểm tra lỗi TypeScript.
 
 ---
 
@@ -80,18 +77,18 @@ Chúng ta sẽ thực hiện tinh giản hóa:
 ---
 
 # VIII. Todo
-- [ ] Cập nhật file cấu hình `lib/modules/configs/catalogs.config.ts`
-- [ ] Viết lại trang `app/admin/catalogs/page.tsx` với giao diện One-Page CRUD
-- [ ] Xóa các tệp dư thừa: `create/page.tsx`, `[id]/edit/page.tsx`, `components/CatalogForm.tsx`
-- [ ] Cập nhật tự động hóa SEO trong `app/(site)/catalogs/[slug]/page.tsx`
+- [ ] Cập nhật schema Convex trong `convex/schema.ts`
+- [ ] Cập nhật API CRUD trong `convex/catalogs.ts`
+- [ ] Cập nhật cấu hình module `lib/modules/configs/catalogs.config.ts`
+- [ ] Viết lại trang admin `app/admin/catalogs/page.tsx`
+- [ ] Viết lại trang client `app/(site)/catalogs/page.tsx`
 - [ ] Xác minh và biên dịch TypeScript toàn dự án
 - [ ] Chạy âm báo "Done, Sir."
 
 ---
 
 # IX. Acceptance Criteria (Tiêu chí chấp nhận)
-- Trang `/admin/catalogs` hoạt động trên duy nhất 1 trang (One-Page CRUD), hiển thị danh sách kéo thả bên trái và form thêm/sửa bên phải.
-- Form chỉnh sửa và danh sách không còn các trường `thumbnail`, `metaTitle`, `metaDescription`.
-- Các nút bật/tắt (Ẩn/Hiện, Nổi bật) hoạt động trực tiếp ngay tại danh sách mà không cần chuyển trang.
-- SEO của trang chi tiết catalog vẫn được tự động điền đầy đủ dựa trên tiêu đề và mô tả.
-- Không có lỗi build hay lỗi TypeScript.
+- Trang client `/catalogs` hoạt động dạng SPA: Sidebar chọn catalog bên trái, Flipbook lật trang bằng hình ảnh (react-pageflip) hiển thị mượt mà bên phải.
+- Form admin CRUD One-Page yêu cầu file PDF bắt buộc khi tạo mới và tự động trích xuất các trang ảnh khi lưu.
+- Link nhúng Heyzine Flipbook bị loại bỏ hoàn toàn khỏi schema, form nhập liệu và UI hiển thị.
+- Biên dịch TypeScript thành công, không lỗi.

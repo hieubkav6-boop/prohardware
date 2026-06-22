@@ -19,11 +19,10 @@ export const catalogsModule = defineModuleWithRuntime({
     fields: [
       { enabled: true, fieldKey: 'title', isSystem: true, name: 'Tiêu đề', order: 0, required: true, type: 'text' },
       { enabled: true, fieldKey: 'description', isSystem: false, name: 'Mô tả ngắn', order: 1, required: false, type: 'textarea' },
-      { enabled: true, fieldKey: 'embedUrl', isSystem: false, name: 'Đường dẫn nhúng Heyzine', order: 2, required: false, type: 'text' },
-      { enabled: true, fieldKey: 'pdfStorageId', isSystem: true, name: 'File PDF', order: 3, required: false, type: 'text' },
-      { enabled: true, fieldKey: 'featured', isSystem: false, name: 'Nổi bật', order: 4, required: false, type: 'boolean' },
-      { enabled: true, fieldKey: 'order', isSystem: true, name: 'Thứ tự', order: 5, required: true, type: 'number' },
-      { enabled: true, fieldKey: 'status', isSystem: true, name: 'Trạng thái', order: 6, required: true, type: 'select' },
+      { enabled: true, fieldKey: 'pdfStorageId', isSystem: true, name: 'File PDF', order: 2, required: true, type: 'text' },
+      { enabled: true, fieldKey: 'featured', isSystem: false, name: 'Nổi bật', order: 3, required: false, type: 'boolean' },
+      { enabled: true, fieldKey: 'order', isSystem: true, name: 'Thứ tự', order: 4, required: true, type: 'number' },
+      { enabled: true, fieldKey: 'status', isSystem: true, name: 'Trạng thái', order: 5, required: true, type: 'select' },
     ],
   },
 });

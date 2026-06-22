@@ -35,10 +35,11 @@ interface CatalogItem {
   description?: string;
   pdfStorageId?: Id<'_storage'>;
   pdfUrl?: string | null;
-  embedUrl?: string;
   status: CatalogStatus;
   order: number;
   featured?: boolean;
+  pageImages?: (string | null)[];
+  totalPages?: number;
 }
 
 export default function CatalogsModulePage() {
@@ -61,11 +62,11 @@ function CatalogsCRUDContent() {
   const [editingCatalog, setEditingCatalog] = useState<CatalogItem | null>(null);
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
-  const [embedUrl, setEmbedUrl] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<CatalogStatus>('Draft');
   const [featured, setFeatured] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [extractionProgress, setExtractionProgress] = useState<{ current: number; total: number } | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const dndSensors = useAdminDndSensors();
@@ -78,7 +79,6 @@ function CatalogsCRUDContent() {
     if (editingCatalog) {
       setTitle(editingCatalog.title);
       setSlug(editingCatalog.slug);
-      setEmbedUrl(editingCatalog.embedUrl || '');
       setDescription(editingCatalog.description || '');
       setStatus(editingCatalog.status);
       setFeatured(editingCatalog.featured || false);
@@ -86,12 +86,12 @@ function CatalogsCRUDContent() {
     } else {
       setTitle('');
       setSlug('');
-      setEmbedUrl('');
       setDescription('');
       setStatus('Draft');
       setFeatured(false);
       setPdfFile(null);
     }
+    setExtractionProgress(null);
   }, [editingCatalog]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,33 +181,97 @@ function CatalogsCRUDContent() {
       return;
     }
 
-    if (!editingCatalog && !pdfFile && !embedUrl.trim()) {
-      toast.error('Vui lòng đính kèm file PDF hoặc dán link nhúng Heyzine');
+    if (!editingCatalog && !pdfFile) {
+      toast.error('Vui lòng đính kèm file PDF');
       return;
     }
 
     setIsSubmitting(true);
+    setExtractionProgress(null);
     try {
       let finalPdfStorageId = editingCatalog?.pdfStorageId;
+      let finalPageImages = editingCatalog?.pageImages;
+      let finalTotalPages = editingCatalog?.totalPages;
 
       if (pdfFile) {
+        // 1. Upload PDF gốc
         const uploadUrl = await generateUploadUrl();
         const pdfUploadRes = await fetch(uploadUrl, {
           method: "POST",
           headers: { "Content-Type": pdfFile.type },
           body: pdfFile,
         });
-        if (!pdfUploadRes.ok) throw new Error("Lỗi khi tải PDF lên");
+        if (!pdfUploadRes.ok) throw new Error("Lỗi khi tải file PDF lên hệ thống");
         const { storageId: pdfId } = await pdfUploadRes.json();
         finalPdfStorageId = pdfId;
+
+        // 2. Trích xuất từng trang PDF thành ảnh JPEG và upload lên storage
+        const arrayBuffer = await pdfFile.arrayBuffer();
+        const pdfjs = await import('pdfjs-dist');
+        const version = pdfjs.version || '6.0.227';
+        
+        // Cấu hình CDN worker cho pdfjs-dist
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+
+        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const total = pdf.numPages;
+        finalTotalPages = total;
+
+        const pageIds: string[] = [];
+        for (let pageNum = 1; pageNum <= total; pageNum++) {
+          setExtractionProgress({ current: pageNum, total });
+          
+          const page = await pdf.getPage(pageNum);
+          // Scale 1.5 mang lại độ phân giải tốt và dung lượng ảnh tối ưu
+          const viewport = page.getViewport({ scale: 1.5 });
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const context = canvas.getContext('2d');
+          if (!context) {
+            throw new Error('Không thể khởi tạo môi trường Canvas 2D');
+          }
+          
+          await page.render({
+            canvasContext: context,
+            viewport: viewport
+          } as any).promise;
+          
+          const blob = await new Promise<Blob | null>((resolve) => {
+            canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85);
+          });
+          
+          if (!blob) {
+            throw new Error(`Lỗi khi trích xuất hình ảnh trang ${pageNum}`);
+          }
+          
+          const uploadUrlPage = await generateUploadUrl();
+          const pageUploadRes = await fetch(uploadUrlPage, {
+            method: "POST",
+            headers: { "Content-Type": "image/jpeg" },
+            body: blob,
+          });
+          
+          if (!pageUploadRes.ok) {
+            throw new Error(`Lỗi khi lưu trữ hình ảnh trang ${pageNum}`);
+          }
+          
+          const { storageId: pageImageId } = await pageUploadRes.json();
+          pageIds.push(pageImageId);
+        }
+        
+        finalPageImages = pageIds;
       }
 
       const payload = {
         title: title.trim(),
         slug: slug.trim(),
         description: description.trim() || undefined,
-        embedUrl: embedUrl.trim() || undefined,
-        pdfStorageId: finalPdfStorageId || undefined,
+        pdfStorageId: finalPdfStorageId!,
+        pageImages: finalPageImages ? (finalPageImages.filter((img): img is string => img !== null) as Id<'_storage'>[]) : undefined,
+        totalPages: finalTotalPages,
         status,
         featured,
         order: editingCatalog ? editingCatalog.order : 0,
@@ -215,7 +279,7 @@ function CatalogsCRUDContent() {
 
       if (editingCatalog) {
         await updateMutation({ id: editingCatalog._id, ...payload });
-        toast.success('Đã lưu thay đổi thành công!');
+        toast.success('Đã cập nhật catalog thành công!');
         setEditingCatalog(null);
       } else {
         await createMutation({ ...payload, order: catalogs.length + 1 });
@@ -225,15 +289,15 @@ function CatalogsCRUDContent() {
       // Reset form
       setTitle('');
       setSlug('');
-      setEmbedUrl('');
       setDescription('');
       setStatus('Draft');
       setFeatured(false);
       setPdfFile(null);
     } catch (err: any) {
-      toast.error(err.message || 'Có lỗi xảy ra khi lưu');
+      toast.error(err.message || 'Đã có lỗi xảy ra trong quá trình lưu trữ');
     } finally {
       setIsSubmitting(false);
+      setExtractionProgress(null);
     }
   };
 
@@ -243,11 +307,11 @@ function CatalogsCRUDContent() {
       <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-5">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-blue-600 animate-pulse" />
+            <BookOpen className="w-6 h-6 text-[#C21A1A] animate-pulse" />
             Quản lý Catalog
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Quản lý và nhúng tài liệu catalog Heyzine Flipbook trực tuyến (One-Page CRUD).
+            Quản lý catalog dưới dạng sách lật SPA, tự động trích xuất các trang từ file PDF (One-Page CRUD).
           </p>
         </div>
       </div>
@@ -263,7 +327,7 @@ function CatalogsCRUDContent() {
             <div className="p-2 sm:p-4">
               {isLoading ? (
                 <div className="flex h-48 items-center justify-center text-gray-500">
-                  <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-2" />
+                  <Loader2 className="w-6 h-6 animate-spin text-[#C21A1A] mr-2" />
                   <span>Đang tải danh sách...</span>
                 </div>
               ) : catalogs.length === 0 ? (
@@ -298,14 +362,14 @@ function CatalogsCRUDContent() {
         <div className="lg:col-span-5">
           <Card className={`shadow-sm transition-all duration-300 border bg-white dark:bg-gray-900 ${
             editingCatalog 
-              ? 'border-blue-500/50 shadow-blue-500/5 dark:border-blue-900/50 bg-blue-50/10' 
+              ? 'border-[#C21A1A]/50 shadow-[#C21A1A]/5 dark:border-[#C21A1A]/50 bg-red-50/5' 
               : 'border-gray-200 dark:border-gray-800'
           }`}>
             <CardHeader className="py-4 px-6 border-b border-gray-100 dark:border-gray-800 flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 {editingCatalog ? (
                   <>
-                    <Edit className="w-4 h-4 text-blue-600" />
+                    <Edit className="w-4 h-4 text-[#C21A1A]" />
                     Cập nhật Catalog
                   </>
                 ) : (
@@ -356,47 +420,52 @@ function CatalogsCRUDContent() {
                   />
                 </div>
 
-                {/* Heyzine URL */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="embedUrl" className="text-xs font-semibold">Link nhúng Heyzine Flipbook</Label>
-                  <Input
-                    id="embedUrl"
-                    value={embedUrl}
-                    onChange={(e) => setEmbedUrl(e.target.value)}
-                    placeholder="https://heyzine.com/flip-book/..."
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-[11px] text-gray-500 leading-normal">
-                    Dán link Heyzine để hiển thị trực tiếp sách lật lôi cuốn.
-                  </p>
-                </div>
-
                 {/* File PDF */}
                 <div className="space-y-1.5">
                   <Label htmlFor="pdf" className="text-xs font-semibold">
-                    {editingCatalog ? 'Thay đổi file PDF đính kèm' : 'File PDF đính kèm'}
+                    {editingCatalog ? 'Thay đổi file PDF đính kèm' : 'File PDF đính kèm *'}
                   </Label>
                   <Input
                     id="pdf"
                     type="file"
                     accept="application/pdf"
                     onChange={handlePdfChange}
+                    required={!editingCatalog}
                     disabled={isSubmitting}
                   />
                   <p className="text-[11px] text-gray-500 leading-normal">
                     {editingCatalog && editingCatalog.pdfStorageId && (
                       <span className="text-emerald-600 block mb-0.5">✓ Đã đính kèm file PDF gốc.</span>
                     )}
-                    Chọn file PDF gốc nếu muốn khách hàng tải về.
+                    Hệ thống sẽ tự động chuyển đổi file PDF thành các trang hình ảnh.
                   </p>
                 </div>
+
+                {/* Tiến trình trích xuất */}
+                {extractionProgress && (
+                  <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-3 text-xs text-blue-600 dark:text-blue-400 space-y-2 animate-pulse">
+                    <div className="flex justify-between font-semibold">
+                      <span>Đang xử lý trang tài liệu...</span>
+                      <span>{Math.round((extractionProgress.current / extractionProgress.total) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-blue-200 dark:bg-blue-800 h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-blue-600 dark:bg-blue-400 h-full transition-all duration-300"
+                        style={{ width: `${(extractionProgress.current / extractionProgress.total) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                      Trang {extractionProgress.current} trên {extractionProgress.total}. Vui lòng chờ cho đến khi hoàn thành.
+                    </p>
+                  </div>
+                )}
 
                 {/* Mô tả */}
                 <div className="space-y-1.5">
                   <Label htmlFor="description" className="text-xs font-semibold">Mô tả ngắn</Label>
                   <textarea
                     id="description"
-                    className="flex min-h-[70px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
+                    className="flex min-h-[70px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C21A1A] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Nhập mô tả ngắn gọn..."
@@ -413,7 +482,7 @@ function CatalogsCRUDContent() {
                       id="featured"
                       checked={featured}
                       onChange={(e) => setFeatured(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[#C21A1A] focus:ring-[#C21A1A]"
                       disabled={isSubmitting}
                     />
                     <Label htmlFor="featured" className="text-xs cursor-pointer select-none">Đánh dấu Nổi bật</Label>
@@ -423,7 +492,7 @@ function CatalogsCRUDContent() {
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value as CatalogStatus)}
-                      className="w-full flex h-8 items-center justify-between rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                      className="w-full flex h-8 items-center justify-between rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                       disabled={isSubmitting}
                     >
                       <option value="Published">Đã xuất bản (Hiện)</option>
