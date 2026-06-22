@@ -170,14 +170,14 @@ function CatalogsContent() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-brand-600" />
+            <BookOpen className="w-6 h-6 text-blue-600" />
             Quản lý Catalog
           </h1>
           <p className="text-sm text-gray-500 mt-1">Quản lý các tài liệu catalog PDF flipbook.</p>
         </div>
         <div className="flex gap-2">
           <Link href="/admin/catalogs/create">
-            <Button className="bg-brand-600 hover:bg-brand-700 text-white">
+            <Button variant="accent">
               <Plus className="w-4 h-4 mr-2" />
               Thêm Catalog
             </Button>
@@ -239,7 +239,7 @@ function CatalogsContent() {
                 <TableRow className="border-gray-200 dark:border-gray-700">
                   <TableHead className="w-12 text-center relative px-2">
                     <div className="absolute inset-0 flex items-center justify-center">
-                      {isSelectingAll ? <Loader2 className="w-4 h-4 animate-spin text-brand-600" /> : <SelectCheckbox checked={isSelectAllActive || (manualSelectedIds.length > 0 && manualSelectedIds.length === catalogs.length)} indeterminate={!isSelectAllActive && manualSelectedIds.length > 0 && manualSelectedIds.length < catalogs.length} onChange={toggleSelectAll} />}
+                      {isSelectingAll ? <Loader2 className="w-4 h-4 animate-spin text-blue-600" /> : <SelectCheckbox checked={isSelectAllActive || (manualSelectedIds.length > 0 && manualSelectedIds.length === catalogs.length)} indeterminate={!isSelectAllActive && manualSelectedIds.length > 0 && manualSelectedIds.length < catalogs.length} onChange={toggleSelectAll} />}
                     </div>
                   </TableHead>
                   <TableHead className="w-12 text-center">Thứ tự</TableHead>
@@ -255,7 +255,7 @@ function CatalogsContent() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-48 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                         <span>Đang tải...</span>
                       </div>
                     </TableCell>
@@ -325,16 +325,16 @@ function CatalogsContent() {
                             <div className="flex justify-end gap-1">
                               {catalog.status === 'Published' && (
                                 <Link href={`/catalogs/${catalog.slug}`} target="_blank">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400" title="Xem trên website">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="Xem trên website">
                                     <ExternalLink className="w-4 h-4" />
                                   </Button>
                                 </Link>
                               )}
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400" title="Nhân bản" onClick={() => handleDuplicate(catalog._id)} disabled={cloningCatalogId === catalog._id}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="Nhân bản" onClick={() => handleDuplicate(catalog._id)} disabled={cloningCatalogId === catalog._id}>
                                 {cloningCatalogId === catalog._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
                               </Button>
                               <Link href={`/admin/catalogs/${catalog._id}/edit`}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400" title="Chỉnh sửa">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="Chỉnh sửa">
                                   <Edit className="w-4 h-4" />
                                 </Button>
                               </Link>
@@ -387,7 +387,7 @@ function CatalogsContent() {
                       ...
                     </span>
                   ) : (
-                    <Button key={item} variant={currentPage === item ? 'default' : 'outline'} size="sm" onClick={() => setCurrentPage(item as number)} className={`h-8 w-8 p-0 ${currentPage === item ? 'bg-brand-600 text-white' : ''}`}>
+                    <Button key={item} variant={currentPage === item ? 'accent' : 'outline'} size="sm" onClick={() => setCurrentPage(item as number)} className="h-8 w-8 p-0">
                       {item}
                     </Button>
                   )

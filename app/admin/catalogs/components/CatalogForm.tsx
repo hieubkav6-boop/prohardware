@@ -33,8 +33,9 @@ interface CatalogFormProps {
     title: string;
     slug: string;
     description?: string;
-    pdfStorageId: Id<'_storage'>;
+    pdfStorageId?: Id<'_storage'> | null;
     pdfUrl?: string | null;
+    embedUrl?: string;
     pageImages?: (Id<'_storage'> | null)[];
     totalPages?: number;
     thumbnail?: string;
@@ -64,9 +65,12 @@ export function CatalogForm({ initialData }: CatalogFormProps) {
   
   // PDF state
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfStorageId, _setPdfStorageId] = useState<Id<'_storage'> | undefined>(initialData?.pdfStorageId);
+  const [pdfStorageId, _setPdfStorageId] = useState<Id<'_storage'> | undefined>(initialData?.pdfStorageId || undefined);
   const [totalPages, _setTotalPages] = useState<number | undefined>(initialData?.totalPages);
   const [pageImages, _setPageImages] = useState<(Id<'_storage'> | null)[]>((initialData?.pageImages as (Id<'_storage'> | null)[]) || []);
+  
+  // Heyzine embed
+  const [embedUrl, setEmbedUrl] = useState(initialData?.embedUrl || '');
   
   // Thumbnail
   const [thumbnail, setThumbnail] = useState<string | undefined>(initialData?.thumbnail);
@@ -190,8 +194,8 @@ export function CatalogForm({ initialData }: CatalogFormProps) {
       return;
     }
 
-    if (!isEdit && !pdfFile) {
-      toast.error('Vui lòng chọn file PDF để tạo catalog');
+    if (!isEdit && !pdfFile && !embedUrl) {
+      toast.error('Vui lòng chọn file PDF hoặc nhập link nhúng Heyzine để tạo catalog');
       return;
     }
 
@@ -210,8 +214,8 @@ export function CatalogForm({ initialData }: CatalogFormProps) {
         }
       }
 
-      if (!finalPdfStorageId) {
-        throw new Error("Không có PDF ID");
+      if (!finalPdfStorageId && !embedUrl) {
+        throw new Error("Không có PDF ID và cũng không có Link nhúng");
       }
 
       const payload = {
@@ -221,7 +225,8 @@ export function CatalogForm({ initialData }: CatalogFormProps) {
         status,
         featured,
         order: isEdit ? order : (Date.now() / 1000), // temp order for new
-        pdfStorageId: finalPdfStorageId,
+        pdfStorageId: finalPdfStorageId || undefined,
+        embedUrl: embedUrl || undefined,
         pageImages: finalPageImages,
         totalPages: finalTotalPages,
         thumbnail,
@@ -254,13 +259,13 @@ export function CatalogForm({ initialData }: CatalogFormProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-brand-600" />
+            <BookOpen className="w-6 h-6 text-blue-600" />
             {isEdit ? 'Chỉnh sửa Catalog' : 'Tạo Catalog Mới'}
           </h1>
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={() => router.push('/admin/catalogs')}>Hủy</Button>
-          <Button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white" disabled={isSubmitting}>
+          <Button type="submit" variant="accent" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             {isEdit ? 'Lưu thay đổi' : 'Tạo mới'}
           </Button>
@@ -285,6 +290,12 @@ export function CatalogForm({ initialData }: CatalogFormProps) {
               </div>
 
               <div>
+                <Label>Đường dẫn nhúng Heyzine (Embed URL)</Label>
+                <Input value={embedUrl} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmbedUrl(e.target.value)} placeholder="Ví dụ: https://heyzine.com/flip-book/e3752e0430.html" />
+                <p className="text-xs text-gray-500 mt-1">Dán link sách lật Heyzine của bạn để hiển thị trực quan (Khuyên dùng).</p>
+              </div>
+
+              <div>
                 <Label>Mô tả ngắn</Label>
                 <textarea className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300" value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Mô tả ngắn gọn về catalog..." rows={3} />
               </div>
@@ -306,19 +317,19 @@ export function CatalogForm({ initialData }: CatalogFormProps) {
               )}
               
               <div>
-                <Label>{isEdit ? 'Thay đổi file PDF (tùy chọn)' : 'Tải lên file PDF *'}</Label>
+                <Label>{isEdit ? 'Thay đổi file PDF (tùy chọn)' : 'Tải lên file PDF (Tùy chọn)'}</Label>
                 <Input type="file" accept="application/pdf" onChange={handlePdfChange} />
-                <p className="text-xs text-gray-500 mt-1">Hệ thống sẽ tự động đọc PDF và trích xuất ảnh từng trang để hiển thị flipbook.</p>
+                <p className="text-xs text-gray-500 mt-1">Đính kèm file PDF gốc để người dùng tải về.</p>
               </div>
 
               {isSubmitting && uploadProgress > 0 && (
-                <div className="mt-4 p-4 border rounded bg-brand-50">
+                <div className="mt-4 p-4 border rounded bg-blue-50/50">
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-brand-700">{uploadStep}</span>
-                    <span className="text-brand-700">{uploadProgress}%</span>
+                    <span className="font-medium text-blue-700">{uploadStep}</span>
+                    <span className="text-blue-700">{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-brand-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                    <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
                   </div>
                 </div>
               )}
