@@ -5,6 +5,7 @@ import { ChevronDown, SlidersHorizontal, Search, X, Check } from 'lucide-react';
 import type { ProductsListColors } from '@/components/site/products/colors';
 import { RangeSlider } from '@/components/shared/RangeSlider';
 import type { Id } from '@/convex/_generated/dataModel';
+import type { CategoryDisplayItem } from '@/lib/products/category-tree';
 
 export function parseNumericValue(name: string): number | null {
   const match = name.match(/(\d+(\.\d+)?)/);
@@ -351,7 +352,7 @@ export function AttributeFilterGroupWidget({
 
 // ========== MOBILE PRODUCTS FILTERS ==========
 interface MobileProductsFiltersProps {
-  categories: any[];
+  categories: CategoryDisplayItem<any>[];
   selectedCategory: Id<"productCategories"> | null;
   onCategoryChange: (id: Id<"productCategories"> | null) => void;
   searchQuery: string;
@@ -439,13 +440,13 @@ export function MobileProductsFilters({
       {isOpen && (
         <>
           {/* Overlay background */}
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300" 
+          <div
+            className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-50 transition-opacity duration-300"
             onClick={() => setIsOpen(false)} 
           />
           {/* Sheet panel */}
           <div 
-            className="fixed bottom-0 left-0 right-0 w-full max-h-[82vh] bg-white dark:bg-slate-900 z-50 flex flex-col rounded-t-[28px] shadow-2xl p-5 overflow-hidden transition-transform duration-300 ease-out transform translate-y-0"
+            className="fixed bottom-0 left-0 right-0 w-full max-h-[82vh] bg-white/95 dark:bg-slate-950/95 backdrop-blur z-50 flex flex-col rounded-t-3xl shadow-[0_-8px_30px_rgba(15,23,42,0.08)] p-5 overflow-hidden transition-transform duration-300 ease-out transform translate-y-0"
             style={{ borderColor: tokens.inputBorder }}
           >
             {/* Drag Handle indicator */}
@@ -541,12 +542,17 @@ export function MobileProductsFilters({
                       key={cat._id}
                       onClick={() => { onCategoryChange(cat._id); setIsOpen(false); }}
                       className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${selectedCategory === cat._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
-                      style={selectedCategory === cat._id
-                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
-                        : undefined
-                      }
+                      style={{
+                        paddingLeft: `${12 + (cat.depth ?? 0) * 14}px`,
+                        ...(selectedCategory === cat._id
+                          ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                          : {}),
+                      }}
                     >
-                      {cat.name}
+                      <span className="flex min-w-0 items-center gap-2">
+                        {(cat.depth ?? 0) > 0 && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-25" />}
+                        <span className="truncate">{cat.name}</span>
+                      </span>
                     </button>
                   ))}
                 </div>

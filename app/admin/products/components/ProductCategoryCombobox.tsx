@@ -3,10 +3,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button, Input } from '@/app/admin/components/ui';
+import { buildCategoryDisplayItems, categoryMatchesQuery } from '@/lib/products/category-tree';
 
 interface ProductCategory {
   _id: string;
   name: string;
+  order?: number;
+  parentId?: string;
+  slug?: string;
 }
 
 interface ProductCategoryComboboxProps {
@@ -32,14 +36,18 @@ export function ProductCategoryCombobox({
   const selectedCategory = useMemo(() => {
     return categories.find((category) => category._id === value) ?? null;
   }, [categories, value]);
+  const categoryOptions = useMemo(() => buildCategoryDisplayItems(categories), [categories]);
+  const selectedOption = useMemo(() => {
+    return categoryOptions.find((category) => category._id === value) ?? null;
+  }, [categoryOptions, value]);
 
   const filteredCategories = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
+    const keyword = query.trim();
     if (!keyword) {
-      return categories;
+      return categoryOptions;
     }
-    return categories.filter((category) => category.name.toLowerCase().includes(keyword));
-  }, [categories, query]);
+    return categoryOptions.filter((category) => categoryMatchesQuery(category, keyword));
+  }, [categoryOptions, query]);
 
   useEffect(() => {
     if (!open) {
@@ -80,7 +88,7 @@ export function ProductCategoryCombobox({
           className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
           <span className="truncate">
-            {selectedCategory ? selectedCategory.name : placeholder}
+            {selectedOption ? selectedOption.path : selectedCategory ? selectedCategory.name : placeholder}
           </span>
           <span className="text-xs text-slate-400">▼</span>
         </button>
@@ -107,8 +115,19 @@ export function ProductCategoryCombobox({
                     setOpen(false);
                   }}
                   className="flex w-full items-center justify-between rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  style={{ paddingLeft: `${8 + category.depth * 14}px` }}
                 >
-                  <span>{category.name}</span>
+                  <span className="flex min-w-0 flex-col text-left">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {category.depth > 0 && <span className="shrink-0 text-slate-400">↳</span>}
+                      <span className="truncate">{category.name}</span>
+                      {category.hasChildren && <span className="rounded-full bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-600">Cha</span>}
+                      {category.depth > 0 && <span className="rounded-full border px-1.5 py-0.5 text-[10px] text-slate-400">Con</span>}
+                    </span>
+                    {category.depth > 0 && (
+                      <span className="truncate text-[11px] text-slate-400">trong {category.parentName ?? category.path}</span>
+                    )}
+                  </span>
                   {value === category._id && <span className="text-xs text-slate-400">✓</span>}
                 </button>
               ))}

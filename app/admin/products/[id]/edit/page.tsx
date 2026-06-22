@@ -2098,7 +2098,7 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
                       setAdditionalCategoryIds(ids.slice(1));
                     }}
                   />
-                  <p className="text-xs text-slate-500">Thẻ đầu tiên là danh mục chính/canonical, các thẻ sau là danh mục phụ.</p>
+                  <p className="text-xs text-slate-500">Thẻ đầu tiên là danh mục chính/canonical. Danh mục cha/con hiển thị theo đường dẫn để dễ chọn đúng nhánh.</p>
                   {hasTaxonomyConflict && (
                     <p className="text-xs font-semibold text-red-500 mt-1.5">
                       Lưu ý: Các danh mục được chọn đang thuộc các kiểu sản phẩm khác nhau. 
@@ -2107,12 +2107,15 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
                   )}
                   </>
                 ) : (
+                  <>
                   <ProductCategoryCombobox
                     categories={categoriesData}
                     value={categoryId}
                     onChange={setCategoryId}
                     onQuickCreate={() => setShowCategoryModal(true)}
                   />
+                  <p className="text-xs text-slate-500">Ưu tiên chọn danh mục con cụ thể. Khi lọc danh mục cha ngoài public, hệ thống sẽ gom cả sản phẩm của các danh mục con.</p>
+                  </>
                 )}
               </div>
             </CardContent>

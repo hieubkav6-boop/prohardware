@@ -24,6 +24,7 @@ import {
   navigateProductContactSaleHref,
   resolveProductContactSaleHref,
 } from '@/lib/products/contact-sale-link';
+import { buildCategoryDisplayItems, categoryMatchesQuery, getCategoryPathItems } from '@/lib/products/category-tree';
 
 // Import các modules con được phân tách để tối ưu hóa kích thước file
 import { 
@@ -183,6 +184,11 @@ function ProductsContent(props: ProductsPageProps) {
 
   const categories = useQuery(api.productCategories.listActive);
   const nonEmptyCategoryIds = useQuery(api.productCategories.listNonEmptyCategoryIds);
+  const categoryHierarchyFeature = useQuery(api.admin.modules.getModuleFeature, {
+    featureKey: 'enableCategoryHierarchy',
+    moduleKey: 'products',
+  });
+  const categoryHierarchyEnabled = categoryHierarchyFeature?.enabled === true;
 
   const visibleCategories = useMemo(() => {
     if (!categories) {return undefined;}
@@ -235,21 +241,28 @@ function ProductsContent(props: ProductsPageProps) {
 
   const categoryOptions = useMemo(() => {
     const baseCategories = visibleCategories ?? categories ?? [];
+    const orderedCategories = categoryHierarchyEnabled
+      ? buildCategoryDisplayItems(baseCategories)
+      : baseCategories.map((category) => ({
+          ...category,
+          depth: 0,
+          hasChildren: false,
+          parentName: undefined,
+          path: category.name,
+        }));
     if (!enableProductTypes || !props.productTypeId) {
-      return baseCategories;
+      return orderedCategories;
     }
-    if (!assignedCategories) {
-      return [];
+    if (assignedCategories && assignedCategories.length > 0) {
+      const assignedSet = new Set(assignedCategories.map((item) => item._id));
+      return orderedCategories.filter((category) => assignedSet.has(category._id));
     }
-    const assignedSet = new Set(assignedCategories.map((category) => category._id));
-    return baseCategories.filter((category) => assignedSet.has(category._id));
-  }, [assignedCategories, categories, enableProductTypes, props.productTypeId, visibleCategories]);
+    return orderedCategories;
+  }, [assignedCategories, categories, categoryHierarchyEnabled, enableProductTypes, props.productTypeId, visibleCategories]);
 
   const filteredCategories = useMemo(() => {
     if (!categorySearchQuery) return categoryOptions;
-    return categoryOptions.filter((cat) =>
-      cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
-    );
+    return categoryOptions.filter((cat) => categoryMatchesQuery(cat, categorySearchQuery));
   }, [categoryOptions, categorySearchQuery]);
 
   const categorySlugFromPath = useMemo(() => {
@@ -358,6 +371,15 @@ function ProductsContent(props: ProductsPageProps) {
     if (!activeCategory || categoryOptions.length === 0) {return null;}
     return categoryOptions.find((c) => c._id === activeCategory) ?? null;
   }, [activeCategory, categoryOptions]);
+  const activeCategoryPath = useMemo(
+    () => getCategoryPathItems(categoryOptions, activeCategory),
+    [activeCategory, categoryOptions]
+  );
+  const getCategoryHref = useCallback((category: { slug?: string }) => buildCategoryPath({
+    categorySlug: category.slug ?? '',
+    mode: routeMode,
+    moduleKey: 'products',
+  }), [routeMode]);
 
   const paginatedSortBy = sortBy === 'popular' ? 'popular' : (sortBy === 'oldest' ? 'oldest' : 'newest');
 
@@ -1102,6 +1124,9 @@ function ProductsContent(props: ProductsPageProps) {
           categoryMap={categoryMap}
           selectedCategory={activeCategory}
           onCategoryChange={handleCategoryChange}
+          activeCategoryPath={activeCategoryPath}
+          categoryHierarchyEnabled={categoryHierarchyEnabled}
+          getCategoryHref={getCategoryHref}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           sortBy={sortBy}
@@ -1166,6 +1191,9 @@ function ProductsContent(props: ProductsPageProps) {
           categoryMap={categoryMap}
           selectedCategory={activeCategory}
           onCategoryChange={handleCategoryChange}
+          activeCategoryPath={activeCategoryPath}
+          categoryHierarchyEnabled={categoryHierarchyEnabled}
+          getCategoryHref={getCategoryHref}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           sortBy={sortBy}
@@ -1223,6 +1251,28 @@ function ProductsContent(props: ProductsPageProps) {
     <>
       <div className="py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
+          {categoryHierarchyEnabled && activeCategoryPath.length > 1 && (
+            <nav
+              aria-label="Đường dẫn danh mục"
+              className="mb-3 flex flex-wrap items-center justify-center gap-1 text-xs"
+              style={{ color: tokens.metaText }}
+            >
+              <a href="/products" className="transition-opacity hover:opacity-80">Sản phẩm</a>
+              {activeCategoryPath.map((item, index) => {
+                const isLast = index === activeCategoryPath.length - 1;
+                return (
+                  <React.Fragment key={item._id}>
+                    <ChevronDown size={12} className="-rotate-90 opacity-60" />
+                    {isLast ? (
+                      <span className="font-semibold" style={{ color: tokens.bodyText }}>{item.name}</span>
+                    ) : (
+                      <a href={getCategoryHref(item)} className="transition-opacity hover:opacity-80">{item.name}</a>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </nav>
+          )}
           <PageHeaderWithCount
             title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
             count={products.length}
@@ -1328,7 +1378,7 @@ function ProductsContent(props: ProductsPageProps) {
                   >
                     <span className="truncate">
                       {activeCategory
-                        ? categoryOptions.find((cat) => cat._id === activeCategory)?.name ?? 'Tất cả danh mục'
+                        ? categoryOptions.find((cat) => cat._id === activeCategory)?.path ?? 'Tất cả danh mục'
                         : 'Tất cả danh mục'}
                     </span>
                     <ChevronDown size={16} style={{ color: tokens.inputIcon }} className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
@@ -1336,7 +1386,7 @@ function ProductsContent(props: ProductsPageProps) {
 
                   {isCategoryDropdownOpen && (
                     <div
-                      className="absolute top-full left-0 mt-1 w-[260px] p-2 rounded-lg border shadow-xl z-50 flex flex-col gap-1.5"
+                      className="absolute top-full left-0 mt-1.5 w-[300px] p-2 rounded-xl border shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur z-50 flex flex-col gap-1.5"
                       style={{
                         borderColor: tokens.inputBorder,
                         backgroundColor: tokens.inputBackground,
@@ -1394,12 +1444,16 @@ function ProductsContent(props: ProductsPageProps) {
                                 }}
                                 className="w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-colors hover:opacity-80"
                                 style={{
+                                  paddingLeft: `${10 + cat.depth * 14}px`,
                                   backgroundColor: isSelected ? `${tokens.primary}18` : 'transparent',
                                   color: isSelected ? tokens.primary : tokens.inputText,
                                   fontWeight: isSelected ? 'bold' : 'normal',
                                 }}
                               >
-                                {cat.name}
+                                <span className="flex min-w-0 items-center gap-2">
+                                  {cat.depth > 0 && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-25" />}
+                                  <span className="truncate">{cat.name}</span>
+                                </span>
                               </button>
                             );
                           })

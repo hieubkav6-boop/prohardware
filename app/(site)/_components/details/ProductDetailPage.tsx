@@ -56,6 +56,7 @@ import {
   navigateProductContactSaleHref,
   resolveProductContactSaleHref,
 } from '@/lib/products/contact-sale-link';
+import { getCategoryPathItems, type CategoryTreeItem } from '@/lib/products/category-tree';
 
 type ProductDetailStyle = 'classic' | 'modern' | 'minimal' | 'premium';
 type ModernHeroStyle = 'full' | 'split' | 'minimal';
@@ -537,6 +538,10 @@ export default function ProductDetailPage({ params }: PageProps) {
     if (!categories) {return new Map<string, string>();}
     return new Map(categories.map((item) => [item._id, item.slug]));
   }, [categories]);
+  const categoryPath = useMemo(
+    () => getCategoryPathItems(categories ?? [], product?.categoryId),
+    [categories, product?.categoryId]
+  );
   const productImagePlaceholderSetting = useQuery(api.settings.getValue, { key: 'product_image_placeholder', defaultValue: '' });
   const productImagePlaceholder = isValidImageSrc(productImagePlaceholderSetting)
     ? productImagePlaceholderSetting.trim()
@@ -1002,6 +1007,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     ...product,
     categoryName: category?.name ?? 'Sản phẩm',
     categorySlug: category?.slug,
+    categoryPath,
     hasVariants: product.hasVariants,
   };
 
@@ -1295,6 +1301,7 @@ interface ProductData {
   categoryId: Id<"productCategories">;
   categoryName: string;
   categorySlug?: string;
+  categoryPath?: CategoryTreeItem[];
   combos?: any[];
 }
 
@@ -1322,6 +1329,52 @@ interface CommentData {
 interface ProductSupplementalContentData {
   preContent?: string;
   postContent?: string;
+}
+
+function ProductCategoryBreadcrumbLinks({
+  product,
+  routeMode,
+  iconSize,
+  includeProductsLink = false,
+}: {
+  product: ProductData;
+  routeMode: 'unified' | 'namespace';
+  iconSize: number;
+  includeProductsLink?: boolean;
+}) {
+  const categoryPath: CategoryTreeItem[] = product.categoryPath?.length
+    ? product.categoryPath
+    : product.categorySlug
+      ? [{ _id: product.categoryId, name: product.categoryName, slug: product.categorySlug }]
+      : [];
+
+  return (
+    <>
+      {includeProductsLink && (
+        <>
+          <Link href="/products" className="transition-colors">Sản phẩm</Link>
+          <ChevronRight size={iconSize} />
+        </>
+      )}
+      {categoryPath.map((category) => (
+        <React.Fragment key={category._id}>
+          <Link
+            href={buildCategoryPath({ categorySlug: category.slug ?? '', mode: routeMode, moduleKey: 'products' })}
+            className="transition-colors"
+          >
+            {category.name}
+          </Link>
+          <ChevronRight size={iconSize} />
+        </React.Fragment>
+      ))}
+      {categoryPath.length === 0 && !includeProductsLink && (
+        <>
+          <Link href="/products" className="transition-colors">Sản phẩm</Link>
+          <ChevronRight size={iconSize} />
+        </>
+      )}
+    </>
+  );
 }
 
 interface StyleProps {
@@ -2262,30 +2315,13 @@ function ClassicStyle({
       <div className="border-b" style={{ borderColor: tokens.divider }}>
         <div className="max-w-6xl mx-auto px-4 py-2 md:py-3">
           <nav className="flex items-center gap-1 text-[11px] md:hidden" style={{ color: tokens.breadcrumbText }}>
-            {product.categorySlug && product.categoryName ? (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={10} />
-              </>
-            ) : (
-              <>
-                <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                <ChevronRight size={10} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
             <span className="font-medium truncate max-w-[180px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
           <nav className="hidden md:flex items-center gap-2 text-sm" style={{ color: tokens.breadcrumbText }}>
             <Link href="/" className="transition-colors">Trang chủ</Link>
             <ChevronRight size={14} />
-            <Link href="/products" className="transition-colors">Sản phẩm</Link>
-            <ChevronRight size={14} />
-            {product.categorySlug && (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={14} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={14} includeProductsLink />
             <span className="font-medium truncate max-w-[200px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
         </div>
@@ -3100,30 +3136,13 @@ function PremiumStyle({
       <div className="border-b" style={{ borderColor: tokens.divider }}>
         <div className="max-w-6xl mx-auto px-4 py-2 md:py-3">
           <nav className="flex items-center gap-1 text-[11px] md:hidden" style={{ color: tokens.breadcrumbText }}>
-            {product.categorySlug && product.categoryName ? (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={10} />
-              </>
-            ) : (
-              <>
-                <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                <ChevronRight size={10} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
             <span className="font-medium truncate max-w-[180px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
           <nav className="hidden md:flex items-center gap-2 text-sm" style={{ color: tokens.breadcrumbText }}>
             <Link href="/" className="transition-colors">Trang chủ</Link>
             <ChevronRight size={14} />
-            <Link href="/products" className="transition-colors">Sản phẩm</Link>
-            <ChevronRight size={14} />
-            {product.categorySlug && (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={14} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={14} includeProductsLink />
             <span className="font-medium truncate max-w-[200px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
         </div>
@@ -4517,23 +4536,29 @@ function ModernStyle({
         <div className="max-w-6xl mx-auto px-4 py-3 md:py-4">
           <nav className="flex items-center justify-between gap-4">
             <div className="md:hidden flex items-center gap-1 text-[11px] truncate" style={{ color: tokens.breadcrumbText }}>
-              {product.categorySlug && product.categoryName ? (
-                <>
-                  <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                  <ChevronRight size={10} />
-                </>
-              ) : (
-                <>
-                  <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                  <ChevronRight size={10} />
-                </>
-              )}
+              <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
               <span className="truncate" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
             </div>
             <div className="hidden md:block text-sm truncate" style={{ color: tokens.breadcrumbText }}>
               <Link href="/" className="transition-colors">Trang chủ</Link>
               {' / '}
               <Link href="/products" className="transition-colors">Sản phẩm</Link>
+              {(product.categoryPath?.length
+                ? product.categoryPath
+                : product.categorySlug
+                  ? [{ _id: product.categoryId, name: product.categoryName, slug: product.categorySlug }]
+                  : []
+              ).map((category) => (
+                <React.Fragment key={category._id}>
+                  {' / '}
+                  <Link
+                    href={buildCategoryPath({ categorySlug: category.slug ?? '', mode: routeMode, moduleKey: 'products' })}
+                    className="transition-colors"
+                  >
+                    {category.name}
+                  </Link>
+                </React.Fragment>
+              ))}
               {' / '}
               <span style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
             </div>
@@ -5273,24 +5298,13 @@ function MinimalStyle({
       <main className={`${contentWidthClass} mx-auto px-0 md:px-6 py-6 md:py-10`}>
         <div className="px-4 md:px-0 mb-3 md:mb-6">
           <nav className="flex items-center gap-1 text-[11px] md:hidden" style={{ color: tokens.breadcrumbText }}>
-            {product.categorySlug && product.categoryName ? (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={10} />
-              </>
-            ) : (
-              <>
-                <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                <ChevronRight size={10} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
             <span className="truncate max-w-[180px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
           <nav className="hidden md:flex items-center gap-2 text-xs" style={{ color: tokens.breadcrumbText }}>
             <Link href="/" className="transition-colors">Trang chủ</Link>
             <ChevronRight size={12} />
-            <Link href="/products" className="transition-colors">Sản phẩm</Link>
-            <ChevronRight size={12} />
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={12} includeProductsLink />
             <span className="truncate max-w-[160px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
         </div>

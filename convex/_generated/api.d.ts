@@ -53,6 +53,7 @@ import type * as lib_multiCategory from "../lib/multiCategory.js";
 import type * as lib_password from "../lib/password.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_pokemonChampionsDefaults from "../lib/pokemonChampionsDefaults.js";
+import type * as lib_productCategoryHierarchy from "../lib/productCategoryHierarchy.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_resourceAccess from "../lib/resourceAccess.js";
 import type * as lib_search from "../lib/search.js";
@@ -166,6 +167,7 @@ declare const fullApi: ApiFromModules<{
   "lib/password": typeof lib_password;
   "lib/permissions": typeof lib_permissions;
   "lib/pokemonChampionsDefaults": typeof lib_pokemonChampionsDefaults;
+  "lib/productCategoryHierarchy": typeof lib_productCategoryHierarchy;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/resourceAccess": typeof lib_resourceAccess;
   "lib/search": typeof lib_search;

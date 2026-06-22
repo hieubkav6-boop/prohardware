@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, X, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
@@ -19,6 +20,7 @@ import {
 import { AttributeFilterGroupWidget, MobileProductsFilters } from './FilterComponents';
 import { RangeSlider } from '@/components/shared/RangeSlider';
 import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
+import { categoryMatchesQuery, type CategoryDisplayItem, type CategoryTreeItem } from '@/lib/products/category-tree';
 
 export type ProductSortOption = 'newest' | 'oldest' | 'popular' | 'price_asc' | 'price_desc' | 'name' | 'name_desc';
 export type ProductsSaleMode = 'cart' | 'contact' | 'affiliate';
@@ -78,10 +80,13 @@ interface LayoutProps {
   isLoadingProducts: boolean;
   postsPerPage: number;
   products: ProductCardProps['product'][];
-  categories: { _id: Id<"productCategories">; name: string; slug: string; description?: string; filterFooterContent?: string }[];
+  categories: CategoryDisplayItem<{ _id: Id<"productCategories">; name: string; slug: string; order?: number; parentId?: Id<"productCategories">; description?: string; filterFooterContent?: string }>[];
   categoryMap: Map<string, string>;
   selectedCategory: Id<"productCategories"> | null;
   onCategoryChange: (id: Id<"productCategories"> | null) => void;
+  activeCategoryPath?: CategoryTreeItem[];
+  categoryHierarchyEnabled?: boolean;
+  getCategoryHref?: (category: CategoryTreeItem) => string;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   sortBy: ProductSortOption;
@@ -129,6 +134,62 @@ interface LayoutProps {
   showCategories?: boolean;
   priceFilterMode?: 'disabled' | 'custom' | 'smart_dropdown' | 'slider';
   gridColumns?: number;
+}
+
+function CategoryTreeLabel({ category, compact = false }: { category: CategoryDisplayItem; compact?: boolean }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      {category.depth > 0 && (
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-25" />
+      )}
+      <span className={compact ? 'truncate' : 'truncate text-[13px]'}>
+        {category.name}
+      </span>
+    </span>
+  );
+}
+
+function CategoryBreadcrumb({
+  items,
+  getCategoryHref,
+  tokens,
+  centered = true,
+}: {
+  items?: CategoryTreeItem[];
+  getCategoryHref?: (category: CategoryTreeItem) => string;
+  tokens: ProductsListColors;
+  centered?: boolean;
+}) {
+  if (!items || items.length <= 1) return null;
+
+  return (
+    <nav
+      aria-label="Đường dẫn danh mục"
+      className={`mb-3 flex flex-wrap items-center gap-1 text-xs ${centered ? 'justify-center' : 'justify-start'}`}
+      style={{ color: tokens.metaText }}
+    >
+      <Link href="/products" className="transition-opacity hover:opacity-80">
+        Sản phẩm
+      </Link>
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+        return (
+          <React.Fragment key={item._id}>
+            <ChevronDown size={12} className="-rotate-90 opacity-60" />
+            {isLast || !getCategoryHref ? (
+              <span className="font-semibold" style={{ color: tokens.bodyText }}>
+                {item.name}
+              </span>
+            ) : (
+              <Link href={getCategoryHref(item)} className="transition-opacity hover:opacity-80">
+                {item.name}
+              </Link>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </nav>
+  );
 }
 
 function roundDownToNiceNumber(num: number) {
@@ -334,6 +395,9 @@ export function CatalogLayout({
   categoryMap,
   selectedCategory,
   onCategoryChange,
+  activeCategoryPath,
+  categoryHierarchyEnabled,
+  getCategoryHref,
   searchQuery,
   onSearchChange,
   sortBy,
@@ -385,9 +449,9 @@ export function CatalogLayout({
   const [categoryQuery, setCategoryQuery] = useState('');
 
   const filteredCategories = useMemo(() => {
-    const query = categoryQuery.trim().toLowerCase();
+    const query = categoryQuery.trim();
     if (!query) return categories;
-    return categories.filter((cat) => cat.name.toLowerCase().includes(query));
+    return categories.filter((cat) => categoryMatchesQuery(cat, query));
   }, [categories, categoryQuery]);
 
   let searchParams: any = null;
@@ -435,6 +499,13 @@ export function CatalogLayout({
     <div className="py-6 md:py-10 px-3 md:px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header Title */}
+        {categoryHierarchyEnabled && (
+          <CategoryBreadcrumb
+            items={activeCategoryPath}
+            getCategoryHref={getCategoryHref}
+            tokens={tokens}
+          />
+        )}
         <PageHeaderWithCount
           title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
           count={products.length}
@@ -482,8 +553,8 @@ export function CatalogLayout({
             )}
 
             {showCategories && (
-              <div className={`${radiusClass} border p-4 space-y-3`} style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
-                <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.bodyText }}>
+              <div className={`${radiusClass} border p-3 space-y-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]`} style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] flex items-center gap-2" style={{ color: tokens.metaText }}>
                   Danh mục sản phẩm
                 </h3>
                 {categories.length > 8 && (
@@ -522,7 +593,7 @@ export function CatalogLayout({
                   {(!categoryQuery || 'tất cả danh mục'.includes(categoryQuery.toLowerCase())) && (
                     <button
                       onClick={() => onCategoryChange(null)}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${!selectedCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                      className={`w-full py-2 px-3 rounded-md text-left text-[13px] transition-colors ${!selectedCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                       style={!selectedCategory
                         ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
                         : undefined
@@ -535,13 +606,15 @@ export function CatalogLayout({
                     <button
                       key={cat._id}
                       onClick={() => onCategoryChange(cat._id)}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${selectedCategory === cat._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
-                      style={selectedCategory === cat._id
-                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
-                        : undefined
-                      }
+                      className={`w-full py-2 px-3 rounded-md text-left text-[13px] transition-colors ${selectedCategory === cat._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                      style={{
+                        paddingLeft: `${12 + cat.depth * 14}px`,
+                        ...(selectedCategory === cat._id
+                          ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                          : {}),
+                      }}
                     >
-                      {cat.name}
+                      <CategoryTreeLabel category={cat} />
                     </button>
                   ))}
                   {categories.length > 8 && filteredCategories.length === 0 && (!categoryQuery || !'tất cả danh mục'.includes(categoryQuery.toLowerCase())) && (
@@ -971,12 +1044,14 @@ export function CatalogLayout({
                       key={cat._id}
                       onClick={() => { onCategoryChange(cat._id); setMobileFilterOpen(false); }}
                       className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors border border-transparent ${selectedCategory === cat._id ? 'font-semibold' : ''}`}
-                      style={selectedCategory === cat._id
-                        ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText }
-                        : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText }
-                      }
+                      style={{
+                        paddingLeft: `${12 + cat.depth * 14}px`,
+                        ...(selectedCategory === cat._id
+                          ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText }
+                          : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText }),
+                      }}
                     >
-                      {cat.name}
+                      <CategoryTreeLabel category={cat} />
                     </button>
                   ))}
                   {categories.length > 8 && filteredCategories.length === 0 && (!categoryQuery || !'tất cả danh mục'.includes(categoryQuery.toLowerCase())) && (
@@ -1163,6 +1238,9 @@ export function ListLayout({
   categoryMap,
   selectedCategory,
   onCategoryChange,
+  activeCategoryPath,
+  categoryHierarchyEnabled,
+  getCategoryHref,
   searchQuery,
   onSearchChange,
   sortBy,
@@ -1226,14 +1304,21 @@ export function ListLayout({
   }, []);
 
   const filteredCategories = useMemo(() => {
-    const query = categorySearchQuery.trim().toLowerCase();
+    const query = categorySearchQuery.trim();
     if (!query) return categories;
-    return categories.filter((cat) => cat.name.toLowerCase().includes(query));
+    return categories.filter((cat) => categoryMatchesQuery(cat, query));
   }, [categories, categorySearchQuery]);
 
   return (
     <div className="py-8 md:py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        {categoryHierarchyEnabled && (
+          <CategoryBreadcrumb
+            items={activeCategoryPath}
+            getCategoryHref={getCategoryHref}
+            tokens={tokens}
+          />
+        )}
         {/* Header Title */}
         <PageHeaderWithCount
           title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
@@ -1345,15 +1430,15 @@ export function ListLayout({
                     >
                       <span className="truncate">
                         {selectedCategory
-                          ? categories.find((cat) => cat._id === selectedCategory)?.name ?? 'Tất cả danh mục'
+                          ? categories.find((cat) => cat._id === selectedCategory)?.path ?? 'Tất cả danh mục'
                           : 'Tất cả danh mục'}
                       </span>
                       <ChevronDown size={16} style={{ color: tokens.inputIcon }} className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {isCategoryDropdownOpen && (
-                      <div
-                        className="absolute top-full left-0 mt-1 w-[260px] p-2 rounded-lg border shadow-xl z-50 flex flex-col gap-1.5"
+                        <div
+                          className="absolute top-full left-0 mt-1.5 w-[300px] p-2 rounded-xl border shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur z-50 flex flex-col gap-1.5"
                         style={{
                           borderColor: tokens.inputBorder,
                           backgroundColor: tokens.inputBackground,
@@ -1411,12 +1496,13 @@ export function ListLayout({
                                   }}
                                   className="w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-colors hover:opacity-80"
                                   style={{
+                                    paddingLeft: `${10 + cat.depth * 14}px`,
                                     backgroundColor: isSelected ? `${tokens.primary}18` : 'transparent',
                                     color: isSelected ? tokens.primary : tokens.inputText,
                                     fontWeight: isSelected ? 'bold' : 'normal',
                                   }}
                                 >
-                                  {cat.name}
+                                  <CategoryTreeLabel category={cat} compact />
                                 </button>
                               );
                             })

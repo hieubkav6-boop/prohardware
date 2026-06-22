@@ -326,7 +326,7 @@ export default function ProductsListExperiencePage() {
               disabled={!canUseOrders}
             />
             <ToggleRow
-              label="Danh mục"
+              label="Danh mục sản phẩm"
               checked={currentLayoutConfig.showCategories && canUseProducts}
               onChange={(v) => updateLayoutConfig('showCategories', v)}
               accentColor={brandColor}
@@ -334,7 +334,7 @@ export default function ProductsListExperiencePage() {
             />
             <ToggleRow
               label="Ẩn danh mục rỗng"
-              description="Ngoài public chỉ hiện danh mục có sản phẩm"
+              description="Ngoài public chỉ hiện danh mục có sản phẩm, tính cả danh mục con"
               checked={config.hideEmptyCategories}
               onChange={(v) => setConfig(prev => ({ ...prev, hideEmptyCategories: v }))}
               accentColor={brandColor}

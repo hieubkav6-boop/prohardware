@@ -182,11 +182,60 @@ function CategoriesContent() {
     ?.find(feature => feature.featureKey === 'enableCategoryHierarchy')
     ?.enabled ?? false;
 
+  const aggregateProductCountMap = useMemo(() => {
+    if (!hierarchyEnabled || !categoriesAllData) {
+      return productCountMap;
+    }
+
+    const categoryProductIdsMap = new Map<string, Set<string>>();
+    const childrenMap = new Map<string, string[]>();
+
+    categoriesAllData.forEach(category => {
+      categoryProductIdsMap.set(category._id, new Set());
+      if (category.parentId) {
+        const children = childrenMap.get(category.parentId) ?? [];
+        children.push(category._id);
+        childrenMap.set(category.parentId, children);
+      }
+    });
+
+    productsData?.forEach(product => {
+      categoryProductIdsMap.get(product.categoryId)?.add(product._id);
+    });
+
+    const collectScopeIds = (categoryId: string) => {
+      const ids: string[] = [categoryId];
+      const queue = [categoryId];
+      const seen = new Set(queue);
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (!current) {continue;}
+        (childrenMap.get(current) ?? []).forEach(childId => {
+          if (seen.has(childId)) {return;}
+          seen.add(childId);
+          ids.push(childId);
+          queue.push(childId);
+        });
+      }
+      return ids;
+    };
+
+    const map: Record<string, number> = {};
+    categoriesAllData.forEach(category => {
+      const productIds = new Set<string>();
+      collectScopeIds(category._id).forEach(categoryId => {
+        categoryProductIdsMap.get(categoryId)?.forEach(productId => productIds.add(productId));
+      });
+      map[category._id] = productIds.size;
+    });
+    return map;
+  }, [categoriesAllData, hierarchyEnabled, productCountMap, productsData]);
+
   const categories = useMemo(() => categoriesData?.map(cat => ({
       ...cat,
       id: cat._id,
-      count: productCountMap[cat._id] || 0,
-    })) ?? [], [categoriesData, productCountMap]);
+      count: aggregateProductCountMap[cat._id] || 0,
+    })) ?? [], [aggregateProductCountMap, categoriesData]);
 
   const treeSortedCategories = useMemo(() => {
     if (!hierarchyEnabled || sortConfig.key !== null) {

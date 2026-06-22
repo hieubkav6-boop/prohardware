@@ -3,10 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button, Input } from './ui';
+import { buildCategoryDisplayItems, categoryMatchesQuery } from '@/lib/products/category-tree';
 
 interface CategoryOption {
   _id: string;
   name: string;
+  order?: number;
+  parentId?: string;
+  slug?: string;
 }
 
 interface CategoryTagsInputProps {
@@ -31,13 +35,17 @@ export function CategoryTagsInput({
   const [limit, setLimit] = useState(8);
   const selectedIds = new Set(value);
   const categoryMap = useMemo(() => new Map(categories.map((category) => [category._id, category])), [categories]);
-  const selectedCategories = value.map((id) => categoryMap.get(id)).filter((item): item is CategoryOption => Boolean(item));
+  const categoryOptions = useMemo(() => buildCategoryDisplayItems(categories), [categories]);
+  const optionMap = useMemo(() => new Map(categoryOptions.map((category) => [category._id, category])), [categoryOptions]);
+  const selectedCategories = value
+    .map((id) => optionMap.get(id) ?? categoryMap.get(id))
+    .filter(Boolean) as Array<CategoryOption & { path?: string }>;
 
   const allFilteredCategories = useMemo(() => {
-    return categories
+    return categoryOptions
       .filter((category) => !selectedIds.has(category._id))
-      .filter((category) => category.name.toLowerCase().includes(query.trim().toLowerCase()));
-  }, [categories, selectedIds, query]);
+      .filter((category) => categoryMatchesQuery(category, query));
+  }, [categoryOptions, selectedIds, query]);
 
   const filteredCategories = useMemo(() => {
     return allFilteredCategories.slice(0, limit);
@@ -93,7 +101,7 @@ export function CategoryTagsInput({
               key={category._id}
               className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-sm font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
             >
-              {category.name}
+              {category.path ?? category.name}
               {index === 0 && <span className="text-[10px] uppercase tracking-wide text-blue-500">Chính</span>}
               <button
                 type="button"
@@ -150,8 +158,19 @@ export function CategoryTagsInput({
                 type="button"
                 onClick={() => addCategory(category._id)}
                 className="flex w-full rounded-md px-2 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+                style={{ paddingLeft: `${8 + category.depth * 14}px` }}
               >
-                {category.name}
+                <span className="flex min-w-0 flex-col">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {category.depth > 0 && <span className="shrink-0 text-slate-400">↳</span>}
+                    <span className="truncate">{category.name}</span>
+                    {category.hasChildren && <span className="rounded-full bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-600">Cha</span>}
+                    {category.depth > 0 && <span className="rounded-full border px-1.5 py-0.5 text-[10px] text-slate-400">Con</span>}
+                  </span>
+                  {category.depth > 0 && (
+                    <span className="truncate text-[11px] text-slate-400">trong {category.parentName ?? category.path}</span>
+                  )}
+                </span>
               </button>
             ))}
           </div>

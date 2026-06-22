@@ -940,7 +940,7 @@ function PreviewMobileProductsFilters({
 
           {showCategories && (
             <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider" style={{ color: tokens.metaText }}>Danh mục</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider" style={{ color: tokens.metaText }}>Danh mục sản phẩm</p>
               <div className="flex flex-wrap gap-1.5">
                 {categories.map((cat, i) => (
                   <span
@@ -1050,7 +1050,7 @@ export function ProductsListPreview({
   cartButtonsLayout = 'stack',
   priceFilterMode = 'custom',
 }: ProductsListPreviewProps) {
-  const categories = ['Tất cả', 'Điện thoại', 'Laptop', 'Tablet', 'Phụ kiện'];
+  const categories = ['Tất cả danh mục', 'Thiết bị bếp', '↳ Tủ bếp dưới', '↳ Tủ bếp trên', 'Thiết bị vệ sinh', '↳ Bồn rửa chén'];
   const isMobile = device === 'mobile';
   const isDesktop = device === 'desktop';
   const visibleProducts = isMobile ? 2 : 4;
@@ -1465,7 +1465,7 @@ export function ProductsListPreview({
                 <div className={`${radiusClass} border p-3`} style={{ backgroundColor: tokens.filterBarBackground, borderColor: tokens.filterBarBorder }}>
                   <h3 className="font-semibold text-sm mb-2 flex items-center gap-2" style={{ color: tokens.bodyText }}>
                     <FileText size={14} style={{ color: tokens.secondary }} />
-                    Danh mục
+                    Danh mục sản phẩm
                   </h3>
                   <ul className="space-y-0.5">
                     {categories.map((cat, i) => (

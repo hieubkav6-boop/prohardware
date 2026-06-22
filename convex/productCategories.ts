@@ -2,6 +2,12 @@ import { mutation, query, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { resolveUniqueSlug } from "./lib/iaSlugs";
 import type { Doc, Id } from "./_generated/dataModel";
+import {
+  buildProductCategoryChildrenMap,
+  collectDescendantIdsFromMap,
+  isProductCategoryHierarchyEnabled,
+  listProductCategoryScopeIds,
+} from "./lib/productCategoryHierarchy";
 
 const categoryDoc = v.object({
   _creationTime: v.number(),
@@ -424,32 +430,37 @@ export const listNonEmptyCategoryIds = query({
 
     const results = await Promise.all(
       categories.map(async (category) => {
-        // 1. Kiểm tra sản phẩm gán chính
-        const primaryPreview = await ctx.db
-          .query("products")
-          .withIndex("by_category_status", (q) => q.eq("categoryId", category._id).eq("status", "Active"))
-          .take(1);
-        if (primaryPreview.length > 0) {
-          return category._id;
-        }
+        const scopeIds = await listProductCategoryScopeIds(ctx, category._id, {
+          activeDescendantsOnly: true,
+        });
 
-        // 2. Kiểm tra sản phẩm gán phụ (assignments)
-        const assignments = await ctx.db
-          .query("productCategoryAssignments")
-          .withIndex("by_category", (q) => q.eq("categoryId", category._id))
-          .take(20);
+        const hasActiveProduct = await Promise.all(
+          scopeIds.map(async (scopeId) => {
+            const primaryPreview = await ctx.db
+              .query("products")
+              .withIndex("by_category_status", (q) => q.eq("categoryId", scopeId).eq("status", "Active"))
+              .take(1);
+            if (primaryPreview.length > 0) {
+              return true;
+            }
 
-        if (assignments.length > 0) {
-          const products = await Promise.all(
-            assignments.map((assign) => ctx.db.get(assign.productId))
-          );
-          const hasActive = products.some((prod) => prod && prod.status === "Active");
-          if (hasActive) {
-            return category._id;
-          }
-        }
+            const assignments = await ctx.db
+              .query("productCategoryAssignments")
+              .withIndex("by_category", (q) => q.eq("categoryId", scopeId))
+              .take(20);
 
-        return null;
+            if (assignments.length === 0) {
+              return false;
+            }
+
+            const products = await Promise.all(
+              assignments.map((assign) => ctx.db.get(assign.productId))
+            );
+            return products.some((prod) => prod && prod.status === "Active");
+          })
+        );
+
+        return hasActiveProduct.some(Boolean) ? category._id : null;
       })
     );
 
@@ -768,47 +779,50 @@ export const listActiveCategoriesWithProductCounts = query({
       .query("productCategoryAssignments")
       .collect();
 
+    const hierarchyEnabled = await isProductCategoryHierarchyEnabled(ctx);
+    const childrenMap = buildProductCategoryChildrenMap(categories);
+
     // Tạo tập hợp các productId có status Active để lọc assignments nhanh O(1)
     const activeProductIds = new Set(products.map((p) => p._id as string));
 
-    // Đếm số lượng sản phẩm cho từng danh mục (gồm cả chính và phụ)
-    const countsMap = new Map<Id<"productCategories">, number>();
-
-    // Khởi tạo count = 0 cho tất cả danh mục active
-    categories.forEach((cat) => countsMap.set(cat._id, 0));
-
-    // Đếm sản phẩm gán chính
-    products.forEach((prod) => {
-      if (countsMap.has(prod.categoryId)) {
-        countsMap.set(prod.categoryId, countsMap.get(prod.categoryId)! + 1);
+    const categoryProductIdsMap = new Map<Id<"productCategories">, Set<string>>();
+    const addProductToCategory = (categoryId: Id<"productCategories">, productId: Id<"products">) => {
+      if (!categoryProductIdsMap.has(categoryId)) {
+        categoryProductIdsMap.set(categoryId, new Set());
       }
-    });
+      categoryProductIdsMap.get(categoryId)!.add(productId);
+    };
 
-    // Đếm sản phẩm gán phụ (tránh đếm trùng nếu sản phẩm đã gán chính vào cùng danh mục đó)
-    const seenAssignments = new Set<string>();
+    categories.forEach((cat) => categoryProductIdsMap.set(cat._id, new Set()));
+
     products.forEach((prod) => {
-      seenAssignments.add(`${prod._id}-${prod.categoryId}`);
+      if (categoryProductIdsMap.has(prod.categoryId)) {
+        addProductToCategory(prod.categoryId, prod._id);
+      }
     });
 
     assignments.forEach((assign) => {
-      // Chỉ tính nếu sản phẩm đó đang Active
-      if (activeProductIds.has(assign.productId as string)) {
-        const key = `${assign.productId}-${assign.categoryId}`;
-        if (!seenAssignments.has(key)) {
-          seenAssignments.add(key);
-          if (countsMap.has(assign.categoryId)) {
-            countsMap.set(assign.categoryId, countsMap.get(assign.categoryId)! + 1);
-          }
-        }
+      if (activeProductIds.has(assign.productId as string) && categoryProductIdsMap.has(assign.categoryId)) {
+        addProductToCategory(assign.categoryId, assign.productId);
       }
     });
 
-    return categories.map((cat) => ({
-      _id: cat._id,
-      name: cat.name,
-      _creationTime: cat._creationTime,
-      productCount: countsMap.get(cat._id) ?? 0,
-    }));
+    return categories.map((cat) => {
+      const scopedCategoryIds = hierarchyEnabled
+        ? collectDescendantIdsFromMap(cat._id, childrenMap)
+        : [cat._id];
+      const productIds = new Set<string>();
+      scopedCategoryIds.forEach((categoryId) => {
+        categoryProductIdsMap.get(categoryId)?.forEach((productId) => productIds.add(productId));
+      });
+
+      return {
+        _id: cat._id,
+        name: cat.name,
+        _creationTime: cat._creationTime,
+        productCount: productIds.size,
+      };
+    });
   },
   returns: v.array(
     v.object({
