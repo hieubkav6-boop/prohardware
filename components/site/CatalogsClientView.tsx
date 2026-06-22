@@ -5,6 +5,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { CatalogFlipbook } from './CatalogFlipbook';
 import { useImagePreloader } from './useImagePreloader';
+import { useBrandColors } from './hooks';
 
 interface CatalogItem {
   _id: string;
@@ -29,6 +30,7 @@ export function CatalogsClientView({
   initialTitle, 
   initialSubtitle 
 }: CatalogsClientViewProps) {
+  const { primary: brandPrimary } = useBrandColors();
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
   const [viewType, setViewType] = useState<'all' | 'single'>('all');
@@ -128,10 +130,17 @@ export function CatalogsClientView({
 
   if (!activeCatalog) {
     return (
-      <div className="max-w-8xl mx-auto px-4 py-8 space-y-8">
+      <div 
+        className="max-w-8xl mx-auto px-4 py-8 space-y-8"
+        style={{
+          '--brand-color': brandPrimary,
+          '--brand-color-hover': `color-mix(in srgb, ${brandPrimary} 40%, transparent)`,
+          '--brand-color-bg': `color-mix(in srgb, ${brandPrimary} 5%, transparent)`,
+        } as React.CSSProperties}
+      >
         {/* Banner Tiêu đề & Giới thiệu Trang */}
         <div className="bg-slate-50/60 dark:bg-gray-900/60 backdrop-blur border border-gray-100 dark:border-gray-800/80 rounded-2xl p-6 sm:p-8 shadow-sm">
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#C21A1A] tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold text-[var(--brand-color)] tracking-tight">
             {pageTitle}
           </h1>
           <div 
@@ -152,15 +161,22 @@ export function CatalogsClientView({
   );
 
   return (
-    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div 
+      className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6"
+      style={{
+        '--brand-color': brandPrimary,
+        '--brand-color-hover': `color-mix(in srgb, ${brandPrimary} 40%, transparent)`,
+        '--brand-color-bg': `color-mix(in srgb, ${brandPrimary} 5%, transparent)`,
+      } as React.CSSProperties}
+    >
       {/* Banner Tiêu đề & Giới thiệu Trang */}
       <div className="bg-slate-50/60 dark:bg-gray-900/60 backdrop-blur border border-gray-100 dark:border-gray-800/80 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
         {/* Họa tiết trang trí nền */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#C21A1A]/5 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-color-bg)] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[var(--brand-color-bg)] rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 max-w-5xl">
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#C21A1A] tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold text-[var(--brand-color)] tracking-tight">
             {pageTitle}
           </h1>
           <div 
@@ -185,7 +201,7 @@ export function CatalogsClientView({
                 setSelectedCategoryName(e.target.value);
                 setActiveIndex(0);
               }}
-              className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+              className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[var(--brand-color)] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[var(--brand-color-hover)]"
             >
               {categoriesList.map(cat => (
                 <option key={cat} value={cat}>
@@ -205,7 +221,7 @@ export function CatalogsClientView({
             id="view-type-select"
             value={viewType}
             onChange={(e) => setViewType(e.target.value as 'all' | 'single')}
-            className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+            className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[var(--brand-color)] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[var(--brand-color-hover)]"
           >
             <option value="all">Xem tất cả</option>
             <option value="single">Chọn tài liệu</option>
@@ -222,7 +238,7 @@ export function CatalogsClientView({
               id="catalog-select"
               value={activeCatalog?._id}
               onChange={(e) => handleSelectCatalogById(e.target.value)}
-              className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+              className="h-8 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[var(--brand-color)] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[var(--brand-color-hover)]"
             >
               {filteredCatalogs.map(catalog => (
                 <option key={catalog._id} value={catalog._id}>
@@ -243,7 +259,7 @@ export function CatalogsClientView({
             );
             return (
               <div key={catalog._id} className="space-y-3">
-                <div className="border-l-4 border-[#C21A1A] pl-3 py-0.5">
+                <div className="border-l-4 border-[var(--brand-color)] pl-3 py-0.5">
                   <h2 className="text-base font-bold text-gray-900 dark:text-white">
                     {catalog.title}
                   </h2>

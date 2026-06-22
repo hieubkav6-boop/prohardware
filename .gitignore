@@ -43,3 +43,6 @@ next-env.d.ts
 # agent scratch workspace
 /scratch/*
 !/scratch/.gitkeep
+
+# upgrade runs
+.vietadmin-upgrade-runs/
