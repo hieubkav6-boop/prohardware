@@ -276,7 +276,7 @@ export function DynamicFooter() {
                   <ul className="space-y-2.5">
                     {col.links.map((link, lIdx) => (
                       <li key={lIdx}>
-                        <Link href={link.url || '#'} className="text-sm block" style={{ color: colors.link, transition: 'color 0.3s ease' }}
+                        <Link href={link.url || '#'} className="text-sm block break-words" style={{ color: colors.link, transition: 'color 0.3s ease' }}
                           onMouseEnter={(e) => { e.currentTarget.style.color = colors.linkHover; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = colors.link; }}>
                           {link.label}
@@ -376,7 +376,7 @@ export function DynamicFooter() {
                   <ul className="space-y-2.5">
                     {col.links.map((link, lIdx) => (
                       <li key={lIdx}>
-                        <Link href={link.url || '#'} className="text-sm block" style={{ color: colors.link, transition: 'color 0.2s, padding-left 0.2s', paddingLeft: '4px' }}
+                        <Link href={link.url || '#'} className="text-sm block break-words" style={{ color: colors.link, transition: 'color 0.2s, padding-left 0.2s', paddingLeft: '4px' }}
                           onMouseEnter={(e) => { e.currentTarget.style.color = colors.linkHover; e.currentTarget.style.paddingLeft = '10px'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = colors.link; e.currentTarget.style.paddingLeft = '4px'; }}>
                           {link.label}
@@ -453,7 +453,7 @@ export function DynamicFooter() {
                 <ul className="space-y-2">
                   {col.links.map((link, lIdx) => (
                     <li key={lIdx}>
-                      <Link href={link.url || '#'} className="text-sm transition-colors block" style={{ color: colors.link }}
+                      <Link href={link.url || '#'} className="text-sm transition-colors block break-words" style={{ color: colors.link }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = colors.linkHover; }}
                         onMouseLeave={(e) => { e.currentTarget.style.color = colors.link; }}>
                         {link.label}
@@ -526,7 +526,7 @@ export function DynamicFooter() {
                   <ul className="space-y-2.5">
                     {col.links.map((link, lIdx) => (
                       <li key={lIdx}>
-                        <Link href={link.url || '#'} className="text-sm block" style={{ color: colors.link, transition: 'color 0.2s' }}
+                        <Link href={link.url || '#'} className="text-sm block break-words" style={{ color: colors.link, transition: 'color 0.2s' }}
                           onMouseEnter={(e) => { e.currentTarget.style.color = colors.linkHover; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = colors.link; }}>
                           {link.label}
@@ -594,7 +594,7 @@ export function DynamicFooter() {
                 <ul className="space-y-2.5">
                   {col.links.map((link, lIdx) => (
                     <li key={lIdx}>
-                      <Link href={link.url || '#'} className="text-sm block" style={{ color: colors.magazineLink, transition: 'color 0.2s' }}
+                      <Link href={link.url || '#'} className="text-sm block break-words" style={{ color: colors.magazineLink, transition: 'color 0.2s' }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = colors.magazineLinkHover; }}
                         onMouseLeave={(e) => { e.currentTarget.style.color = colors.magazineLink; }}>
                         {link.label}
@@ -696,7 +696,7 @@ export function DynamicFooter() {
                   <ul className="space-y-1.5">
                     {col.links.map((link, lIdx) => (
                       <li key={lIdx}>
-                        <Link href={link.url || '#'} className="text-sm transition-all block opacity-75 hover:opacity-100 hover:translate-x-0.5" style={{ color: colors.stackedTextOnBg }}>
+                        <Link href={link.url || '#'} className="text-sm transition-all block opacity-75 hover:opacity-100 hover:translate-x-0.5 break-words" style={{ color: colors.stackedTextOnBg }}>
                           {link.label}
                         </Link>
                       </li>

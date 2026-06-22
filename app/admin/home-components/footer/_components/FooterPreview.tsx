@@ -252,7 +252,7 @@ export const FooterPreview = ({
                     <h3 className="font-bold text-[10px] uppercase tracking-wider mb-3 pb-1" style={{ color: colors.heading, borderBottom: `2px solid ${colors.borderSoft}` }}>{col.title}</h3>
                     <ul className="space-y-1.5">
                       {col.links.map((link, lIdx) => (
-                        <li key={lIdx}><span className="text-xs" style={{ color: colors.link }}>{link.label}</span></li>
+                        <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
                       ))}
                     </ul>
                   </div>
@@ -327,7 +327,7 @@ export const FooterPreview = ({
                     </h3>
                     <ul className="space-y-1.5">
                       {col.links.map((link, lIdx) => (
-                        <li key={lIdx}><span className="text-xs" style={{ color: colors.link }}>{link.label}</span></li>
+                        <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
                       ))}
                     </ul>
                   </div>
@@ -385,7 +385,7 @@ export const FooterPreview = ({
                   <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: colors.heading }}>{col.title}</h4>
                   <ul className="space-y-1">
                     {col.links.map((link, lIdx) => (
-                      <li key={lIdx}><span className="text-xs" style={{ color: colors.link }}>{link.label}</span></li>
+                      <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
                     ))}
                   </ul>
                 </div>
@@ -440,7 +440,7 @@ export const FooterPreview = ({
                     <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2" style={{ color: colors.heading }}>{col.title}</h3>
                     <ul className="space-y-1.5">
                       {col.links.map((link, lIdx) => (
-                        <li key={lIdx}><span className="text-xs" style={{ color: colors.link }}>{link.label}</span></li>
+                        <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
                       ))}
                     </ul>
                   </div>
@@ -493,7 +493,7 @@ export const FooterPreview = ({
                   <h3 className="font-bold text-[10px] tracking-wide mb-2" style={{ color: colors.magazineHeading }}>{col.title}</h3>
                   <ul className="space-y-1.5">
                     {col.links.map((link, lIdx) => (
-                      <li key={lIdx}><span className="text-xs" style={{ color: colors.magazineLink }}>{link.label}</span></li>
+                      <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.magazineLink }}>{link.label}</span></li>
                     ))}
                   </ul>
                 </div>
@@ -557,7 +557,7 @@ export const FooterPreview = ({
                     <h3 className="font-bold text-[10px] uppercase tracking-wider mb-2 pb-1" style={{ color: colors.stackedTextOnBg, borderBottom: '1px solid rgba(255,255,255,0.22)' }}>{col.title}</h3>
                     <ul className="space-y-1">
                       {col.links.map((link, lIdx) => (
-                        <li key={lIdx}><span className="text-xs opacity-75" style={{ color: colors.stackedTextOnBg }}>{link.label}</span></li>
+                        <li key={lIdx}><span className="text-xs opacity-75 break-words" style={{ color: colors.stackedTextOnBg }}>{link.label}</span></li>
                       ))}
                     </ul>
                   </div>
