@@ -7,7 +7,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { 
-  Check, ChevronDown, ClipboardPaste, Copy, Edit, Eye, FileText, FileVideo, 
+  Check, ChevronDown, ClipboardPaste, Copy, Download, Edit, Eye, FileText, FileVideo, 
   FolderOpen, Grid, Image as ImageIcon, List, 
   Loader2, Plus, RefreshCw, Search, Trash2, Upload, X, Scissors, Zap
 } from 'lucide-react';
@@ -539,7 +539,7 @@ function MediaContent() {
     };
 
     // Copy URL
-    const handleCopyUrl = async (url: string | null, id: string) => {
+  const handleCopyUrl = async (url: string | null, id: string) => {
     if (!url) {return;}
     try {
       await navigator.clipboard.writeText(url);
@@ -548,6 +548,27 @@ function MediaContent() {
       toast.success('Đã copy URL');
     } catch {
       toast.error('Không thể copy URL');
+    }
+  };
+
+  // Download File
+  const handleDownload = async (url: string | null, filename: string) => {
+    if (!url) {return;}
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback: Mở tab mới nếu fetch bị chặn hoặc lỗi
+      window.open(url, '_blank');
     }
   };
 
@@ -870,6 +891,18 @@ function MediaContent() {
                       >
                         {copiedId === media._id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                       </button>
+                      {media.url && (
+                        <button
+                          className="p-1.5 bg-white dark:bg-slate-800 rounded shadow hover:bg-slate-50 text-slate-600 dark:text-slate-300"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await handleDownload(media.url, media.filename);
+                          }}
+                          title="Tải xuống file"
+                        >
+                          <Download size={14} />
+                        </button>
+                      )}
                       <Link 
                         href={`/admin/media/${media._id}/edit`}
                         onClick={(e) => e.stopPropagation()}
@@ -1012,6 +1045,15 @@ function MediaContent() {
                       >
                         {copiedId === media._id ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-slate-400" />}
                       </button>
+                      {media.url && (
+                        <button
+                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                          onClick={async () => handleDownload(media.url, media.filename)}
+                          title="Tải xuống file"
+                        >
+                          <Download size={16} className="text-slate-400" />
+                        </button>
+                      )}
                       <Link href={`/admin/media/${media._id}/edit`}>
                         <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title="Sửa">
                           <Edit size={16} className="text-slate-400" />
