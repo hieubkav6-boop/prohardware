@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, ChevronRight, FolderOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { CatalogFlipbook } from './CatalogFlipbook';
@@ -31,7 +31,7 @@ export function CatalogsClientView({
   initialSubtitle 
 }: CatalogsClientViewProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [expandedCats, setExpandedCats] = useState<string[]>([]);
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
   const { preloadFirstPages, preload } = useImagePreloader();
 
   // Đăng ký WebSocket với Convex để đồng bộ realtime khi thay đổi dữ liệu/cấu hình
@@ -55,6 +55,28 @@ export function CatalogsClientView({
     return (rawCatalogs || []).filter(c => c.title !== 'Catalog 2024');
   }, [rawCatalogs]);
 
+  // Lấy danh sách các danh mục độc nhất
+  const categoriesList = useMemo(() => {
+    const list = new Set<string>();
+    catalogs.forEach(c => {
+      list.add(c.category?.trim() || 'Tài liệu chung');
+    });
+    return Array.from(list);
+  }, [catalogs]);
+
+  // Tự động chọn danh mục đầu tiên khi mới load
+  useEffect(() => {
+    if (categoriesList.length > 0 && !selectedCategoryName) {
+      setSelectedCategoryName(categoriesList[0]);
+    }
+  }, [categoriesList, selectedCategoryName]);
+
+  // Lọc catalogs theo danh mục đang chọn
+  const filteredCatalogs = useMemo(() => {
+    if (!selectedCategoryName) return catalogs;
+    return catalogs.filter(c => (c.category?.trim() || 'Tài liệu chung') === selectedCategoryName);
+  }, [catalogs, selectedCategoryName]);
+
   // Tier 1: Preload trang đầu của tất cả catalogs khi load trang
   useEffect(() => {
     if (catalogs && catalogs.length > 0) {
@@ -62,51 +84,21 @@ export function CatalogsClientView({
     }
   }, [catalogs, preloadFirstPages]);
 
-  // Group catalogs by category
-  const categories = useMemo(() => {
-    const grouped: Record<string, CatalogItem[]> = {};
-    catalogs.forEach((catalog) => {
-      const catName = catalog.category?.trim() || 'Tài liệu chung';
-      if (!grouped[catName]) {
-        grouped[catName] = [];
-      }
-      grouped[catName].push(catalog);
-    });
+  const activeCatalog = filteredCatalogs[activeIndex] || filteredCatalogs[0] || catalogs[0];
 
-    return Object.keys(grouped).map((name, index) => ({
-      id: `cat-${index}`,
-      name,
-      items: grouped[name],
-    }));
-  }, [catalogs]);
-
-  // Auto expand first category
+  // Đảm bảo activeIndex luôn hợp lệ khi filteredCatalogs thay đổi
   useEffect(() => {
-    if (categories.length > 0 && expandedCats.length === 0) {
-      setExpandedCats([categories[0].id]);
+    if (filteredCatalogs.length > 0) {
+      const exists = filteredCatalogs.some((c, idx) => idx === activeIndex);
+      if (!exists) {
+        setActiveIndex(0);
+      }
     }
-  }, [categories, expandedCats.length]);
+  }, [filteredCatalogs, activeIndex]);
 
-  // Flat list order to map activeIndex correctly
-  const flatCatalogs = useMemo(() => {
-    const list: CatalogItem[] = [];
-    categories.forEach(cat => {
-      list.push(...cat.items);
-    });
-    return list;
-  }, [categories]);
-
-  const activeCatalog = flatCatalogs[activeIndex] || catalogs[0];
-
-  const toggleCat = (id: string) => {
-    setExpandedCats(prev =>
-      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-    );
-  };
-
-  // Tier 2: Prefetch pages 2-4 on hover
+  // Tier 2: Prefetch pages 2-4 on hover/active
   const handleCatalogHover = (catalog: CatalogItem) => {
-    if (catalog.pageImageUrls && catalog.pageImageUrls.length > 1) {
+    if (catalog && catalog.pageImageUrls && catalog.pageImageUrls.length > 1) {
       const nextPages = catalog.pageImageUrls.slice(1, 4).filter((url): url is string => !!url);
       if (nextPages.length > 0) {
         void preload(nextPages, { priority: 'high' });
@@ -114,9 +106,15 @@ export function CatalogsClientView({
     }
   };
 
-  // Find index of catalog in flat list
-  const handleSelectCatalog = (catalog: CatalogItem) => {
-    const idx = flatCatalogs.findIndex(c => c._id === catalog._id);
+  // Kích hoạt prefetch cho tài liệu đang active
+  useEffect(() => {
+    if (activeCatalog) {
+      handleCatalogHover(activeCatalog);
+    }
+  }, [activeCatalog]);
+
+  const handleSelectCatalogById = (id: string) => {
+    const idx = filteredCatalogs.findIndex(c => c._id === id);
     if (idx !== -1) {
       setActiveIndex(idx);
     }
@@ -124,7 +122,7 @@ export function CatalogsClientView({
 
   if (!activeCatalog) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-8xl mx-auto px-4 py-8 space-y-8">
         {/* Banner Tiêu đề & Giới thiệu Trang */}
         <div className="bg-slate-50/60 dark:bg-gray-900/60 backdrop-blur border border-gray-100 dark:border-gray-800/80 rounded-2xl p-6 sm:p-8 shadow-sm">
           <h1 className="text-3xl sm:text-4xl font-bold text-[#C21A1A] tracking-tight">
@@ -149,7 +147,7 @@ export function CatalogsClientView({
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Banner Tiêu đề & Giới thiệu Trang */}
       <div className="bg-slate-50/60 dark:bg-gray-900/60 backdrop-blur border border-gray-100 dark:border-gray-800/80 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
         {/* Họa tiết trang trí nền */}
@@ -167,75 +165,70 @@ export function CatalogsClientView({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Sidebar bên trái: Danh mục Accordion */}
-        <div className="lg:col-span-4 xl:col-span-3 space-y-3">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
-            <div className="mb-4 px-2">
-              <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Thư Viện Tài Liệu
-              </h2>
+      {/* Dropdown Selectors thay thế Sidebar Accordion */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 animate-fade-in">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+          {/* Danh mục Selector */}
+          <div className="space-y-1.5 flex-1 max-w-sm">
+            <label htmlFor="category-select" className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+              Danh mục tài liệu
+            </label>
+            <div className="relative font-semibold text-slate-700">
+              <select
+                id="category-select"
+                value={selectedCategoryName}
+                onChange={(e) => {
+                  setSelectedCategoryName(e.target.value);
+                  setActiveIndex(0); // reset index về catalog đầu tiên của danh mục mới
+                }}
+                className="w-full flex h-11 items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+              >
+                {categoriesList.map(cat => (
+                  <option key={cat} value={cat}>
+                    📁  {cat}
+                  </option>
+                ))}
+              </select>
             </div>
-            
-            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {categories.map((category) => {
-                const isExpanded = expandedCats.includes(category.id);
-                return (
-                  <div 
-                    key={category.id} 
-                    className="rounded-xl border border-transparent bg-slate-50/50 dark:bg-gray-800/20 overflow-hidden transition-all hover:border-slate-200 dark:hover:border-gray-700 hover:bg-white dark:hover:bg-gray-900 hover:shadow-sm"
-                  >
-                    <button
-                      onClick={() => toggleCat(category.id)}
-                      className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold text-slate-700 dark:text-gray-300"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`p-1.5 rounded-md ${isExpanded ? 'bg-red-50 dark:bg-red-950/20 text-[#C21A1A]' : 'bg-slate-200 dark:bg-gray-800 text-slate-500'}`}>
-                          <FolderOpen className="w-4 h-4" />
-                        </div>
-                        <span className="truncate max-w-[130px]">{category.name}</span>
-                        <span className="text-xs font-normal text-slate-400">({category.items.length})</span>
-                      </div>
-                      <ChevronRight 
-                        className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} 
-                      />
-                    </button>
+          </div>
 
-                    {isExpanded && (
-                      <div className="border-t border-slate-100 dark:border-gray-800 bg-white dark:bg-gray-950">
-                        {category.items.map((catalog) => {
-                          const isCurrentActive = catalog._id === activeCatalog._id;
-                          return (
-                            <button
-                              key={catalog._id}
-                              onClick={() => handleSelectCatalog(catalog)}
-                              onMouseEnter={() => handleCatalogHover(catalog)}
-                              onFocus={() => handleCatalogHover(catalog)}
-                              className={`flex w-full items-start px-4 py-2.5 text-left text-sm transition-all border-l-2 ${
-                                isCurrentActive
-                                  ? 'bg-red-50/40 dark:bg-red-950/10 border-[#C21A1A] text-[#C21A1A] font-semibold'
-                                  : 'border-transparent text-slate-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 hover:text-[#C21A1A] dark:hover:text-white'
-                              }`}
-                            >
-                              <span className="font-medium line-clamp-1 w-full">{catalog.title}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          {/* Tài liệu Selector */}
+          <div className="space-y-1.5 flex-1 max-w-sm">
+            <label htmlFor="catalog-select" className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">
+              Chọn tài liệu sách lật
+            </label>
+            <div className="relative font-semibold text-slate-700">
+              <select
+                id="catalog-select"
+                value={activeCatalog?._id}
+                onChange={(e) => handleSelectCatalogById(e.target.value)}
+                className="w-full flex h-11 items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#C21A1A] dark:border-slate-800 dark:bg-slate-950 dark:text-white cursor-pointer transition-all hover:border-[#C21A1A]/40"
+              >
+                {filteredCatalogs.map(catalog => (
+                  <option key={catalog._id} value={catalog._id}>
+                    📖  {catalog.title}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Main Flipbook Viewer bên phải */}
-        <div className="lg:col-span-8 xl:col-span-9">
-          <div className="w-full">
-            <CatalogFlipbook images={activeImages} title={activeCatalog.title} />
-          </div>
+        {/* Thông tin tài liệu đang đọc */}
+        <div className="hidden lg:block text-right">
+          <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-1">
+            Đang hiển thị tài liệu
+          </span>
+          <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 justify-end">
+            <BookOpen className="w-4 h-4 text-[#C21A1A]" />
+            {activeCatalog?.title}
+          </h2>
         </div>
+      </div>
+
+      {/* Sách Lật Full Width max-w-8xl */}
+      <div className="w-full">
+        <CatalogFlipbook images={activeImages} title={activeCatalog.title} />
       </div>
     </div>
   );

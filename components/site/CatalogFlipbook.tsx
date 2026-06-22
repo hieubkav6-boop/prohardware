@@ -3,8 +3,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import HTMLFlipBook from 'react-pageflip';
 import { 
-  ChevronLeft, 
-  ChevronRight, 
   ZoomIn, 
   ZoomOut, 
   RotateCcw, 
@@ -155,22 +153,32 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
     const calculateLayout = () => {
       if (!containerRef.current) return;
       const containerW = containerRef.current.clientWidth;
-      const containerH = containerRef.current.clientHeight;
       const windowW = window.innerWidth;
+      const windowH = window.innerHeight;
       
       const isMobile = windowW < 1024;
-      const mode = isMobile ? 'single' : 'double';
-      setViewMode(mode);
+      
+      // Ở lần load đầu tự động set theo mobile, các lần sau theo state
+      if (isMobile && viewMode === 'double') {
+        setViewMode('single');
+      }
 
-      const maxH = containerH - 120; // safe padding
-      let maxW = mode === 'single' ? containerW - 40 : (containerW - 80) / 2;
+      const currentMode = viewMode;
+      const availableWidth = currentMode === 'single' 
+        ? containerW - 48 
+        : (containerW - 96) / 2;
 
-      let targetHeight = maxH;
-      let targetWidth = targetHeight / pdfRatio;
+      // Chiều cao an toàn tránh cuộn trang quá nhiều
+      const maxAllowedH = isFullscreen 
+        ? windowH - 150 
+        : Math.min(680, Math.floor(windowH * 0.72));
 
-      if (targetWidth > maxW) {
-        targetWidth = maxW;
-        targetHeight = targetWidth * pdfRatio;
+      let targetWidth = availableWidth;
+      let targetHeight = targetWidth * pdfRatio;
+
+      if (targetHeight > maxAllowedH) {
+        targetHeight = maxAllowedH;
+        targetWidth = targetHeight / pdfRatio;
       }
 
       setBaseDim({
@@ -182,20 +190,25 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
     calculateLayout();
     window.addEventListener('resize', calculateLayout);
     return () => window.removeEventListener('resize', calculateLayout);
-  }, [pdfRatio, images, isReady]);
+  }, [pdfRatio, images, isReady, viewMode, isFullscreen]);
 
   const onFlip = (e: any) => {
     setPage(e.data);
     playFlipSound();
   };
 
-  const nextButtonClick = () => {
-    flipBookRef.current?.pageFlip()?.flipNext();
-  };
-
-  const prevButtonClick = () => {
-    flipBookRef.current?.pageFlip()?.flipPrev();
-  };
+  // Lắng nghe phím mũi tên bàn phím để lật trang
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        flipBookRef.current?.pageFlip()?.flipNext();
+      } else if (e.key === 'ArrowLeft') {
+        flipBookRef.current?.pageFlip()?.flipPrev();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -235,9 +248,10 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full flex flex-col items-center bg-gray-100 dark:bg-gray-950 overflow-hidden ${
-        isFullscreen ? 'h-screen fixed inset-0 z-50' : 'h-[600px] md:h-[750px] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm'
+      className={`relative w-full flex flex-col items-center bg-gray-50 dark:bg-gray-950 overflow-hidden ${
+        isFullscreen ? 'h-screen fixed inset-0 z-50' : 'rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm'
       }`}
+      style={isFullscreen ? undefined : { minHeight: '350px' }}
     >
       {/* Premium Toolbar */}
       <div className="w-full flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-10 h-14 select-none">
@@ -312,7 +326,12 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
       </div>
 
       {/* Main Flipbook Render Area */}
-      <div className="flex-1 w-full relative flex items-center justify-center p-8 bg-slate-200/50 dark:bg-gray-950 overflow-auto">
+      <div 
+        className="w-full relative flex items-center justify-center bg-slate-100/80 dark:bg-gray-950 overflow-hidden py-4 px-6"
+        style={{
+          height: isFullscreen ? 'calc(100vh - 56px)' : `${baseDim.height + 40}px`
+        }}
+      >
         {!isReady && baseDim.width > 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
             <Loader2 className="w-8 h-8 animate-spin text-[#C21A1A] mb-2" />
@@ -329,6 +348,7 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
             }}
           >
             <FlipBook
+              key={`${viewMode}-${baseDim.width}-${baseDim.height}`}
               width={baseDim.width}
               height={baseDim.height}
               size="fixed"
@@ -346,7 +366,15 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
               usePortrait={viewMode === 'single'}
               drawShadow={true}
               flippingTime={600}
-              disableFlipByClick={true}
+              disableFlipByClick={false}
+              onInit={() => {
+                if (page > 0 && flipBookRef.current) {
+                  // Đưa người dùng trở về đúng trang hiện tại sau khi re-mount
+                  setTimeout(() => {
+                    flipBookRef.current?.pageFlip()?.turnToPage(page);
+                  }, 50);
+                }
+              }}
             >
               {images.map((src, idx) => (
                 <PageSheet key={idx} number={idx + 1}>
@@ -365,31 +393,6 @@ export function CatalogFlipbook({ images, title }: CatalogFlipbookProps) {
             </FlipBook>
           </div>
         )}
-      </div>
-
-      {/* Navigation controls at bottom */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/95 dark:bg-gray-900/95 backdrop-blur shadow-lg border border-gray-100 dark:border-gray-800 px-6 py-2.5 rounded-full z-10 select-none">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30"
-          onClick={prevButtonClick}
-          disabled={page === 0}
-        >
-          <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-        </Button>
-        <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 min-w-[70px] text-center font-mono">
-          {page + 1} / {images.length}
-        </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30"
-          onClick={nextButtonClick}
-          disabled={page >= images.length - 1}
-        >
-          <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-        </Button>
       </div>
     </div>
   );
