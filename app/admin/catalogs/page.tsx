@@ -180,10 +180,11 @@ function CatalogsCRUDContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !slug.trim()) {
-      toast.error('Vui lòng điền tiêu đề và slug');
+    if (!title.trim()) {
+      toast.error('Vui lòng điền tiêu đề');
       return;
     }
+    const finalSlug = slug.trim() || generateSlug(title);
 
     if (!editingCatalog && !pdfFile) {
       toast.error('Vui lòng đính kèm file PDF');
@@ -272,7 +273,7 @@ function CatalogsCRUDContent() {
 
       const payload = {
         title: title.trim(),
-        slug: slug.trim(),
+        slug: finalSlug,
         category: category.trim() || undefined,
         description: description.trim() || undefined,
         pdfStorageId: finalPdfStorageId!,
@@ -409,19 +410,6 @@ function CatalogsCRUDContent() {
                     value={title}
                     onChange={handleTitleChange}
                     placeholder="Ví dụ: Catalog Thiết Bị Vệ Sinh 2024"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                {/* Slug */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="slug" className="text-xs font-semibold">Đường dẫn tĩnh (Slug) *</Label>
-                  <Input
-                    id="slug"
-                    value={slug}
-                    onChange={(e) => setSlug(generateSlug(e.target.value))}
-                    placeholder="duong-dan-catalog"
                     required
                     disabled={isSubmitting}
                   />
@@ -614,9 +602,11 @@ function SortableRowItem({
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0" />
             )}
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500 block truncate mt-0.5">
-            /{catalog.slug}
-          </span>
+          {catalog.category && (
+            <span className="text-xs text-emerald-600 dark:text-emerald-500 block truncate mt-0.5 font-medium">
+              Danh mục: {catalog.category}
+            </span>
+          )}
         </div>
       </div>
 
