@@ -24,6 +24,12 @@ const EXTRA_TABLES: TableNames[] = [
   "menuItems",
   "homeComponents",
   "images",
+  "productTypes",
+  "productCategoryTypes",
+  "attributeGroups",
+  "attributeTerms",
+  "productTypeAttributeGroups",
+  "productAttributeTerms",
   "courseCategoryAssignments",
   "projectCategoryAssignments",
   "resourceCategoryAssignments",
@@ -154,6 +160,11 @@ const DATA_CONTRACTS: DataContract[] = [
     table: "productTypes",
   },
   {
+    label: "Product category type mappings",
+    required: ["categoryId", "typeId"],
+    table: "productCategoryTypes",
+  },
+  {
     label: "Product attributes",
     optional: ["displayConfig", "iconPath", "isSpecialFilter"],
     required: ["code", "filterType", "inputType", "isFilterable", "name", "order", "slug"],
@@ -164,6 +175,17 @@ const DATA_CONTRACTS: DataContract[] = [
     optional: ["description", "iconType", "iconValue", "metadata"],
     required: ["active", "groupId", "name", "order", "slug"],
     table: "attributeTerms",
+  },
+  {
+    label: "Product type attribute groups",
+    required: ["groupId", "order", "typeId"],
+    table: "productTypeAttributeGroups",
+  },
+  {
+    label: "Product attribute terms",
+    optional: ["extra"],
+    required: ["order", "productId", "termId"],
+    table: "productAttributeTerms",
   },
   {
     label: "Post categories",

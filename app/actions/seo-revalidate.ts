@@ -11,3 +11,8 @@ export const revalidateSeoPaths = async () => {
   revalidatePath('/sitemap/services.xml');
   revalidatePath('/sitemap/landings.xml');
 };
+
+export const revalidateSiteLayout = async () => {
+  revalidatePath('/', 'layout');
+};
+

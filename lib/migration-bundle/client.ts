@@ -47,6 +47,12 @@ const splitModuleFiles = (payload: MigrationBundlePayload) => {
 
   if (payload.modules.products) {
     const data = payload.modules.products as Record<string, unknown>;
+    files['modules/products/product-types.json'] = toJsonFile(data.productTypes ?? []);
+    files['modules/products/product-category-types.json'] = toJsonFile(data.productCategoryTypes ?? []);
+    files['modules/products/attribute-groups.json'] = toJsonFile(data.attributeGroups ?? []);
+    files['modules/products/attribute-terms.json'] = toJsonFile(data.attributeTerms ?? []);
+    files['modules/products/product-type-attribute-groups.json'] = toJsonFile(data.productTypeAttributeGroups ?? []);
+    files['modules/products/product-attribute-terms.json'] = toJsonFile(data.productAttributeTerms ?? []);
     files['modules/products/categories.json'] = toJsonFile(data.categories ?? []);
     files['modules/products/products.chunk-001.json'] = toJsonFile(data.products ?? []);
     files['modules/products/options.json'] = toJsonFile(data.options ?? []);
@@ -176,6 +182,12 @@ export async function parseBundleFile(file: File): Promise<ParsedBundleInput> {
 
   if (modules.includes('products')) {
     payload.modules.products = {
+      productTypes: await parseJson(zip, 'modules/products/product-types.json', []),
+      productCategoryTypes: await parseJson(zip, 'modules/products/product-category-types.json', []),
+      attributeGroups: await parseJson(zip, 'modules/products/attribute-groups.json', []),
+      attributeTerms: await parseJson(zip, 'modules/products/attribute-terms.json', []),
+      productTypeAttributeGroups: await parseJson(zip, 'modules/products/product-type-attribute-groups.json', []),
+      productAttributeTerms: await parseJson(zip, 'modules/products/product-attribute-terms.json', []),
       categories: await parseJson(zip, 'modules/products/categories.json', []),
       products: await parseJson(zip, 'modules/products/products.chunk-001.json', []),
       options: await parseJson(zip, 'modules/products/options.json', []),

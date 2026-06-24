@@ -1070,6 +1070,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           productAttributesMap={productAttributesMap}
           productTypeId={(product as any)?.productTypeId}
           premiumBannerItems={experienceConfig.premiumBannerItems}
+          productTerms={productTerms}
           premiumBannerBg={experienceConfig.premiumBannerBg}
           premiumBannerText={experienceConfig.premiumBannerText}
           showPremiumBanner={experienceConfig.showPremiumBanner}
@@ -1145,6 +1146,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           socialButtons={experienceConfig.socialButtons}
           productAttributesMap={productAttributesMap}
           productTypeId={(product as any)?.productTypeId}
+          productTerms={productTerms}
         />
       )}
       {experienceConfig.layoutStyle === 'modern' && (
@@ -1206,6 +1208,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           productTypeId={(product as any)?.productTypeId}
           enableProductTypes={enableProductTypes}
           productTypeSlugMap={productTypeSlugMap}
+          productTerms={productTerms}
         />
       )}
       {experienceConfig.layoutStyle === 'minimal' && (
@@ -1267,6 +1270,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           productTypeId={(product as any)?.productTypeId}
           enableProductTypes={enableProductTypes}
           productTypeSlugMap={productTypeSlugMap}
+          productTerms={productTerms}
         />
       )}
       <ProductImageLightbox
@@ -1415,6 +1419,7 @@ interface StyleProps {
   productTypeId?: string;
   enableProductTypes?: boolean;
   productTypeSlugMap?: Map<string, string>;
+  productTerms: any[];
 }
 
 interface ExperienceBlocksProps {
@@ -2170,6 +2175,7 @@ function ClassicStyle({
   productTypeId,
   highlightsPosition,
   highlightsSpacing,
+  productTerms,
 }: ClassicStyleProps) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -2634,6 +2640,14 @@ function ClassicStyle({
                   style={{ color: tokens.bodyText }}
                 />
               )}
+              {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                <RichContent
+                  key={term._id}
+                  content={toRichTextContent(term.description!)}
+                  className="max-w-none mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                  style={{ color: tokens.bodyText }}
+                />
+              ))}
               {supplementalContent?.postContent ? (
                 <RichContent
                   content={toRichTextContent(supplementalContent.postContent)}
@@ -2784,6 +2798,7 @@ function PremiumStyle({
   productAttributesMap,
   productTypeId,
   premiumBannerItems,
+  productTerms,
   premiumBannerBg = 'primary',
   premiumBannerText = 'white',
   showPremiumBanner = true,
@@ -4000,6 +4015,14 @@ function PremiumStyle({
                   style={{ color: tokens.bodyText }}
                 />
               )}
+              {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                <RichContent
+                  key={term._id}
+                  content={toRichTextContent(term.description!)}
+                  className="max-w-none mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                  style={{ color: tokens.bodyText }}
+                />
+              ))}
               {supplementalContent?.postContent ? (
                 <RichContent
                   content={toRichTextContent(supplementalContent.postContent)}
@@ -4376,6 +4399,7 @@ function ModernStyle({
   productTypeSlugMap,
   highlightsPosition,
   highlightsSpacing,
+  productTerms,
 }: StyleProps & ExperienceBlocksProps & HighlightBlockProps & { heroStyle: ModernHeroStyle }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -4990,6 +5014,14 @@ function ModernStyle({
                       style={{ color: tokens.bodyText }}
                     />
                   )}
+                  {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                    <RichContent
+                      key={term._id}
+                      content={toRichTextContent(term.description!)}
+                      className="max-w-none mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                      style={{ color: tokens.bodyText }}
+                    />
+                  ))}
                   {supplementalContent?.postContent ? (
                     <RichContent
                       content={toRichTextContent(supplementalContent.postContent)}
@@ -5116,6 +5148,7 @@ function MinimalStyle({
   productTypeSlugMap,
   highlightsPosition,
   highlightsSpacing,
+  productTerms,
 }: StyleProps & ExperienceBlocksProps & HighlightBlockProps & { contentWidth: MinimalContentWidth }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<VariantSelectionMap>({});
@@ -5592,6 +5625,14 @@ function MinimalStyle({
                   style={{ color: tokens.bodyText }}
                 />
               )}
+              {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                <RichContent
+                  key={term._id}
+                  content={toRichTextContent(term.description!)}
+                  className="leading-relaxed font-light text-justify mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                  style={{ color: tokens.bodyText }}
+                />
+              ))}
               {supplementalContent?.postContent ? (
                 <RichContent
                   content={toRichTextContent(supplementalContent.postContent)}

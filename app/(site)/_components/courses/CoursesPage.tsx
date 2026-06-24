@@ -13,6 +13,7 @@ import { COURSE_LEVEL_OPTIONS, getCourseLevelLabel } from '@/lib/courses/labels'
 import { useCoursesListConfig } from '@/lib/experiences';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
+import { ListContextIntro } from '@/components/shared/ListContextIntro';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
 import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
@@ -395,6 +396,22 @@ function CoursesContent() {
       .map((slug) => allFilterValues.find((v) => v.slug === slug)?._id)
       .filter((id): id is Id<'courseFilterValues'> => id !== undefined);
   }, [activeFilterSlugs, allFilterValues]);
+
+  const activeFilterNames = useMemo(() => {
+    if (activeFilterSlugs.length === 0 || !allFilterValues) return [];
+    const activeSlugSet = new Set(activeFilterSlugs);
+    return allFilterValues
+      .filter((value) => activeSlugSet.has(value.slug))
+      .map((value) => value.name);
+  }, [activeFilterSlugs, allFilterValues]);
+
+  const sortContextValue = sortBy === 'newest' ? null : ({
+    popular: 'Xem nhiều nhất',
+    price_asc: 'Giá tăng dần',
+    price_desc: 'Giá giảm dần',
+    title: 'Tên A-Z',
+    title_desc: 'Tên Z-A',
+  } as Partial<Record<typeof sortBy, string>>)[sortBy];
 
   const isSearchActive = debouncedSearch.length > 0;
   const isPaginationMode = config.paginationType === 'pagination' || isSearchActive || level.length > 0 || activeFilterSlugs.length > 0;
@@ -1038,6 +1055,22 @@ function CoursesContent() {
         paginationNode={paginationBar}
         infiniteScrollTriggerNode={infiniteScrollTrigger}
         headerTitle={activeCategoryName ?? 'Khóa học'}
+        contextIntroNode={(
+          <ListContextIntro
+            enabled={config.showContextIntro}
+            items={[
+              { label: 'Tìm', value: search.trim() || debouncedSearch.trim() || null },
+              { label: 'Danh mục', value: activeCategoryName },
+              { label: 'Trình độ', value: level ? getCourseLevelLabel(level as 'Beginner' | 'Intermediate' | 'Advanced') : null },
+              { label: 'Bộ lọc', value: activeFilterNames.length > 0 ? activeFilterNames.join(', ') : null },
+              { label: 'Sắp xếp', value: sortContextValue },
+            ]}
+            totalCount={totalCourses}
+            unit="khóa học"
+            accentColor={brandColors.primary}
+            isDark={isDark}
+          />
+        )}
         brandColor={brandColors.primary}
         isDark={isDark}
       />

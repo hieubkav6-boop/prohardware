@@ -13,6 +13,7 @@ import { useInView } from 'react-intersection-observer';
 import { useCart } from '@/lib/cart';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
 import { toast } from 'sonner';
+import { ListContextIntro } from '@/components/shared/ListContextIntro';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
 import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
@@ -559,6 +560,22 @@ function ResourcesContent() {
       .map((filterSlug) => allFilterValues.find((value) => value.slug === filterSlug)?._id)
       .filter((id): id is Id<'resourceFilterValues'> => id !== undefined);
   }, [activeFilterSlugs, allFilterValues]);
+
+  const activeFilterNames = useMemo(() => {
+    if (activeFilterSlugs.length === 0 || !allFilterValues) return [];
+    const activeSlugSet = new Set(activeFilterSlugs);
+    return allFilterValues
+      .filter((value) => activeSlugSet.has(value.slug))
+      .map((value) => value.name);
+  }, [activeFilterSlugs, allFilterValues]);
+
+  const sortContextValue = sortBy === 'newest' ? null : ({
+    popular: 'Xem nhiều nhất',
+    price_asc: 'Giá tăng dần',
+    price_desc: 'Giá giảm dần',
+    title: 'Tên A-Z',
+    title_desc: 'Tên Z-A',
+  } as Partial<Record<typeof sortBy, string>>)[sortBy];
 
   const isSearchActive = debouncedSearch.length > 0;
   const isPaginationMode = config.paginationType === 'pagination' || isSearchActive || activeFilterSlugs.length > 0;
@@ -1114,6 +1131,21 @@ function ResourcesContent() {
         paginationNode={paginationBar}
         infiniteScrollTriggerNode={infiniteScrollTrigger}
         headerTitle={activeCategoryName ?? 'Tài nguyên'}
+        contextIntroNode={(
+          <ListContextIntro
+            enabled={config.showContextIntro}
+            items={[
+              { label: 'Tìm', value: search.trim() || debouncedSearch.trim() || null },
+              { label: 'Danh mục', value: activeCategoryName },
+              { label: 'Bộ lọc', value: activeFilterNames.length > 0 ? activeFilterNames.join(', ') : null },
+              { label: 'Sắp xếp', value: sortContextValue },
+            ]}
+            totalCount={totalResources}
+            unit="tài nguyên"
+            accentColor={brandColors.primary}
+            isDark={isDark}
+          />
+        )}
         brandColor={brandColors.primary}
         isDark={isDark}
       />

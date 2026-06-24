@@ -22,6 +22,7 @@ type PostsListConfig = {
   darkModePremiumBorder?: boolean;
   showDetailButton?: boolean;
   detailButtonText?: string;
+  showContextIntro?: boolean;
 };
 
 type SearchFilterConfig = {
@@ -98,6 +99,7 @@ export function usePostsListConfig(): PostsListConfig {
       darkModePremiumBorder?: boolean;
       showDetailButton?: boolean;
       detailButtonText?: string;
+      showContextIntro?: boolean;
     } | undefined;
     const rawStyle = raw?.layoutStyle;
     const layoutStyle: PostsListConfig['layoutStyle'] = rawStyle === 'sidebar'
@@ -115,6 +117,7 @@ export function usePostsListConfig(): PostsListConfig {
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
       showDetailButton: raw?.showDetailButton ?? false,
       detailButtonText: raw?.detailButtonText ?? 'Đọc ngay',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 }
@@ -224,6 +227,7 @@ type ProductsListConfig = {
   darkModePremiumBorder?: boolean;
   showDetailButton?: boolean;
   detailButtonText?: string;
+  showContextIntro?: boolean;
 };
 
 export function useProductsListConfig(): ProductsListConfig {
@@ -253,6 +257,7 @@ export function useProductsListConfig(): ProductsListConfig {
       darkModePremiumBorder?: boolean;
       showDetailButton?: boolean;
       detailButtonText?: string;
+      showContextIntro?: boolean;
     } | undefined;
 
     const layoutStyle: ProductsListConfig['layoutStyle'] = raw?.layoutStyle ?? 'grid';
@@ -286,6 +291,7 @@ export function useProductsListConfig(): ProductsListConfig {
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
       showDetailButton: raw?.showDetailButton ?? false,
       detailButtonText: raw?.detailButtonText ?? 'Xem sản phẩm',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting, cartAvailable, ordersEnabled, wishlistModule, promotionsModule]);
 }
@@ -339,6 +345,7 @@ type ServicesListConfig = {
   darkModePremiumBorder?: boolean;
   showDetailButton?: boolean;
   detailButtonText?: string;
+  showContextIntro?: boolean;
 };
 
 export function useServicesListConfig(): ServicesListConfig {
@@ -358,6 +365,7 @@ export function useServicesListConfig(): ServicesListConfig {
       darkModePremiumBorder?: boolean;
       showDetailButton?: boolean;
       detailButtonText?: string;
+      showContextIntro?: boolean;
     } | undefined;
 
     const rawStyle = raw?.layoutStyle;
@@ -377,6 +385,7 @@ export function useServicesListConfig(): ServicesListConfig {
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
       showDetailButton: raw?.showDetailButton ?? false,
       detailButtonText: raw?.detailButtonText ?? 'Xem dịch vụ',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 }
@@ -395,6 +404,7 @@ type ProjectsListConfig = {
   darkModePremiumBorder?: boolean;
   showDetailButton?: boolean;
   detailButtonText?: string;
+  showContextIntro?: boolean;
 };
 
 export function useProjectsListConfig(): ProjectsListConfig {
@@ -415,6 +425,7 @@ export function useProjectsListConfig(): ProjectsListConfig {
       darkModePremiumBorder?: boolean;
       showDetailButton?: boolean;
       detailButtonText?: string;
+      showContextIntro?: boolean;
     } | undefined;
     const rawStyle = raw?.layoutStyle;
     const layoutStyle: ProjectsListConfig['layoutStyle'] = rawStyle === 'sidebar'
@@ -434,6 +445,7 @@ export function useProjectsListConfig(): ProjectsListConfig {
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
       showDetailButton: raw?.showDetailButton ?? false,
       detailButtonText: raw?.detailButtonText ?? 'Xem dự án',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 }
@@ -476,6 +488,7 @@ type CoursesListConfig = {
   darkModePremiumBorder?: boolean;
   showDetailButton?: boolean;
   detailButtonText?: string;
+  showContextIntro?: boolean;
 };
 
 const normalizeCoursesListLayoutStyle = (value?: string): CoursesListConfig['layoutStyle'] => {
@@ -502,6 +515,7 @@ export function useCoursesListConfig(): CoursesListConfig {
       darkModePremiumBorder?: boolean;
       showDetailButton?: boolean;
       detailButtonText?: string;
+      showContextIntro?: boolean;
     } | undefined;
     const layoutStyle = normalizeCoursesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
@@ -518,6 +532,7 @@ export function useCoursesListConfig(): CoursesListConfig {
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
       showDetailButton: raw?.showDetailButton ?? false,
       detailButtonText: raw?.detailButtonText ?? 'Vào học ngay',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 }
@@ -560,6 +575,7 @@ type ResourcesListConfig = {
   darkModePremiumBorder?: boolean;
   showDetailButton?: boolean;
   detailButtonText?: string;
+  showContextIntro?: boolean;
 };
 
 const normalizeResourcesListLayoutStyle = (value?: string): ResourcesListConfig['layoutStyle'] => {
@@ -586,6 +602,7 @@ export function useResourcesListConfig(): ResourcesListConfig {
       darkModePremiumBorder?: boolean;
       showDetailButton?: boolean;
       detailButtonText?: string;
+      showContextIntro?: boolean;
     } | undefined;
     const layoutStyle = normalizeResourcesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
@@ -602,6 +619,7 @@ export function useResourcesListConfig(): ResourcesListConfig {
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
       showDetailButton: raw?.showDetailButton ?? false,
       detailButtonText: raw?.detailButtonText ?? 'Xem chi tiết',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 }

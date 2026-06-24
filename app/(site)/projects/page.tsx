@@ -10,6 +10,7 @@ import { buildDetailPath, normalizeRouteMode, buildCategoryPath, buildModuleList
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import type { Id } from '@/convex/_generated/dataModel';
+import { ListContextIntro } from '@/components/shared/ListContextIntro';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
 import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
@@ -260,6 +261,12 @@ function ProjectsContent() {
   const hasActiveFilters = useMemo(() => {
     return Boolean(activeCategory || searchQuery.trim() || sortBy !== 'newest');
   }, [activeCategory, searchQuery, sortBy]);
+  const sortContextValue = sortBy === 'newest' ? null : ({
+    oldest: 'Cũ nhất',
+    popular: 'Xem nhiều',
+    title: 'Theo tên A-Z',
+    title_desc: 'Theo tên Z-A',
+  } as Partial<Record<typeof sortBy, string>>)[sortBy];
 
   const handleClearFilters = useCallback(() => {
     setSearchQuery('');
@@ -601,6 +608,20 @@ function ProjectsContent() {
         infiniteScrollTriggerNode={infiniteScrollTrigger}
         headerTitle={activeCategory ? activeCategory.name : 'Dự án đã thực hiện'}
         headerDescription={activeCategory?.description}
+        contextIntroNode={(
+          <ListContextIntro
+            enabled={listConfig.showContextIntro}
+            items={[
+              { label: 'Tìm', value: searchQuery.trim() || debouncedSearchQuery.trim() || null },
+              { label: 'Danh mục', value: activeCategory?.name },
+              { label: 'Sắp xếp', value: sortContextValue },
+            ]}
+            totalCount={totalCount}
+            unit="dự án"
+            accentColor={brandColor}
+            isDark={isDark}
+          />
+        )}
         brandColor={brandColor}
         isDark={isDark}
       />

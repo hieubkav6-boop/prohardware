@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, Briefcase, Clock, Star } from 'lucide-react'
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { type ServiceSortOption } from '@/components/site/services';
+import { ListContextIntro } from '@/components/shared/ListContextIntro';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
 import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
@@ -596,7 +597,16 @@ function ServicesContent() {
     </>
   );
 
-  const activeCategoryName = activeCategory && categoryMap ? categoryMap.get(activeCategory as any) : null;
+  const activeCategoryDoc = activeCategory && categories
+    ? categories.find((category) => category._id === activeCategory) ?? null
+    : null;
+  const activeCategoryName = activeCategoryDoc?.name ?? null;
+  const sortContextValue = sortBy === 'newest' ? null : ({
+    oldest: 'Cũ nhất',
+    popular: 'Xem nhiều nhất',
+    title: 'Tên A-Z',
+    title_desc: 'Tên Z-A',
+  } as Partial<Record<ServiceSortOption, string>>)[sortBy];
 
   return (
     <div className="flex-1 w-full font-active">
@@ -710,6 +720,21 @@ function ServicesContent() {
         paginationNode={paginationBar}
         infiniteScrollTriggerNode={infiniteScrollTrigger}
         headerTitle={activeCategoryName ?? 'Dịch vụ của chúng tôi'}
+        headerDescription={activeCategoryDoc?.description}
+        contextIntroNode={(
+          <ListContextIntro
+            enabled={listConfig.showContextIntro}
+            items={[
+              { label: 'Tìm', value: searchQuery.trim() || debouncedSearchQuery.trim() || null },
+              { label: 'Danh mục', value: activeCategoryName },
+              { label: 'Sắp xếp', value: sortContextValue },
+            ]}
+            totalCount={totalCount}
+            unit="dịch vụ"
+            accentColor={brandColor}
+            isDark={isDark}
+          />
+        )}
         brandColor={brandColor}
         isDark={isDark}
       />

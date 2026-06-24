@@ -161,7 +161,18 @@ const buildReadmeAgent = () => ({
   ],
   stableKeys: {
     settings: ["settings:{group}:{key}", "moduleSettings:{moduleKey}:{settingKey}"],
-    products: ["product:{sku}", "productCategory:{slug}", "productOption:{slug}", "productVariant:{sku}:{index}"],
+    products: [
+      "product:{sku}",
+      "productCategory:{slug}",
+      "productType:{slug}",
+      "productCategoryType:{typeSlug}:{categorySlug}",
+      "attributeGroup:{slug}",
+      "attributeTerm:{groupSlug}:{slug}",
+      "productTypeAttributeGroup:{typeSlug}:{groupSlug}",
+      "productAttributeTerm:{productSku}:{groupSlug}:{termSlug}",
+      "productOption:{slug}",
+      "productVariant:{sku}:{index}",
+    ],
     services: ["service:{slug}", "serviceCategory:{slug}"],
     posts: ["post:{slug}", "postCategory:{slug}"],
     menus: ["menu:{location}", "menuItem:{menuLocation}:{pathKey}"],
@@ -576,6 +587,12 @@ export const exportBundle = query({
       const [
         categories,
         products,
+        productTypes,
+        productCategoryTypes,
+        attributeGroups,
+        attributeTerms,
+        productTypeAttributeGroups,
+        productAttributeTerms,
         options,
         optionValues,
         variants,
@@ -583,6 +600,12 @@ export const exportBundle = query({
       ] = await Promise.all([
         ctx.db.query("productCategories").take(5000),
         ctx.db.query("products").take(5000),
+        ctx.db.query("productTypes").take(1000),
+        ctx.db.query("productCategoryTypes").take(5000),
+        ctx.db.query("attributeGroups").take(1000),
+        ctx.db.query("attributeTerms").take(5000),
+        ctx.db.query("productTypeAttributeGroups").take(5000),
+        ctx.db.query("productAttributeTerms").take(20000),
         ctx.db.query("productOptions").take(5000),
         ctx.db.query("productOptionValues").take(10000),
         ctx.db.query("productVariants").take(10000),
@@ -590,6 +613,9 @@ export const exportBundle = query({
       ]);
 
       const categoryById = new Map(categories.map((item) => [item._id, item] as const));
+      const productTypeById = new Map(productTypes.map((item) => [item._id, item] as const));
+      const attributeGroupById = new Map(attributeGroups.map((item) => [item._id, item] as const));
+      const attributeTermById = new Map(attributeTerms.map((item) => [item._id, item] as const));
       const optionById = new Map(options.map((item) => [item._id, item] as const));
       const optionValueById = new Map(optionValues.map((item) => [item._id, item] as const));
 
@@ -640,6 +666,7 @@ export const exportBundle = query({
           description: item.description,
           digitalCredentialsTemplate: item.digitalCredentialsTemplate,
           digitalDeliveryType: item.digitalDeliveryType,
+          effectivePrice: item.effectivePrice,
           hasVariants: item.hasVariants ?? false,
           image: item.image,
           images: item.images ?? [],
@@ -654,6 +681,7 @@ export const exportBundle = query({
           order: item.order,
           price: item.price,
           productType: item.productType,
+          productTypeSlug: item.productTypeId ? productTypeById.get(item.productTypeId)?.slug : undefined,
           renderType: item.renderType,
           salePrice: item.salePrice,
           sku: item.sku,
@@ -663,6 +691,74 @@ export const exportBundle = query({
           mediaRefs,
         };
       });
+
+      const productTypesOut = productTypes.map((item) => ({
+        active: item.active,
+        description: item.description,
+        name: item.name,
+        order: item.order,
+        priceRanges: item.priceRanges,
+        slug: item.slug,
+      }));
+
+      const productCategoryTypesOut = productCategoryTypes
+        .map((item) => ({
+          categorySlug: categoryById.get(item.categoryId)?.slug,
+          typeSlug: productTypeById.get(item.typeId)?.slug,
+        }))
+        .filter((item) => item.categorySlug && item.typeSlug);
+
+      const attributeGroupsOut = attributeGroups.map((item) => ({
+        code: item.code,
+        displayConfig: item.displayConfig,
+        filterType: item.filterType,
+        iconPath: item.iconPath,
+        inputType: item.inputType,
+        isFilterable: item.isFilterable,
+        isSpecialFilter: item.isSpecialFilter,
+        name: item.name,
+        order: item.order,
+        slug: item.slug,
+      }));
+
+      const attributeTermsOut = attributeTerms
+        .map((item) => ({
+          active: item.active,
+          description: item.description,
+          groupSlug: attributeGroupById.get(item.groupId)?.slug,
+          iconType: item.iconType,
+          iconValue: item.iconValue,
+          metadata: item.metadata,
+          name: item.name,
+          order: item.order,
+          slug: item.slug,
+        }))
+        .filter((item) => item.groupSlug);
+
+      const productTypeAttributeGroupsOut = productTypeAttributeGroups
+        .map((item) => ({
+          groupSlug: attributeGroupById.get(item.groupId)?.slug,
+          order: item.order,
+          typeSlug: productTypeById.get(item.typeId)?.slug,
+        }))
+        .filter((item) => item.groupSlug && item.typeSlug);
+
+      const productById = new Map(products.map((item) => [item._id, item] as const));
+      const productAttributeTermsOut = productAttributeTerms
+        .map((item) => {
+          const product = productById.get(item.productId);
+          const term = attributeTermById.get(item.termId);
+          const group = term ? attributeGroupById.get(term.groupId) : undefined;
+          return {
+            extra: item.extra,
+            groupSlug: group?.slug,
+            order: item.order,
+            productSku: product?.sku,
+            productSlug: product?.slug,
+            termSlug: term?.slug,
+          };
+        })
+        .filter((item) => item.productSku && item.groupSlug && item.termSlug);
 
       const categoryOut = categories.map((item) => ({
         active: item.active,
@@ -700,7 +796,6 @@ export const exportBundle = query({
         value: item.value,
       }));
 
-      const productById = new Map(products.map((item) => [item._id, item] as const));
       const variantsOut = variants.map((item) => ({
         allowBackorder: item.allowBackorder,
         barcode: item.barcode,
@@ -726,15 +821,32 @@ export const exportBundle = query({
       }));
 
       moduleData.products = {
+        attributeGroups: attributeGroupsOut,
+        attributeTerms: attributeTermsOut,
         categories: categoryOut,
-        products: productsOut,
         options: optionsOut,
         optionValues: optionValuesOut,
+        productAttributeTerms: productAttributeTermsOut,
+        productCategoryTypes: productCategoryTypesOut,
+        products: productsOut,
+        productTypeAttributeGroups: productTypeAttributeGroupsOut,
+        productTypes: productTypesOut,
         variants: variantsOut,
         supplementalContents: supplementalOut,
       };
 
-      counts.products = categoryOut.length + productsOut.length + optionsOut.length + optionValuesOut.length + variantsOut.length + supplementalOut.length;
+      counts.products = categoryOut.length
+        + productsOut.length
+        + productTypesOut.length
+        + productCategoryTypesOut.length
+        + attributeGroupsOut.length
+        + attributeTermsOut.length
+        + productTypeAttributeGroupsOut.length
+        + productAttributeTermsOut.length
+        + optionsOut.length
+        + optionValuesOut.length
+        + variantsOut.length
+        + supplementalOut.length;
     }
 
     if (modules.includes("services")) {
@@ -1049,9 +1161,108 @@ export const importBundle = mutation({
       if (modulePayload) {
         const categoryIdBySlug = await importCategoryTree("productCategories", ensureArray(modulePayload.categories));
 
+        const productTypes = ensureArray<any>(modulePayload.productTypes);
+        const productCategoryTypes = ensureArray<any>(modulePayload.productCategoryTypes);
+        const attributeGroups = ensureArray<any>(modulePayload.attributeGroups);
+        const attributeTerms = ensureArray<any>(modulePayload.attributeTerms);
+        const productTypeAttributeGroups = ensureArray<any>(modulePayload.productTypeAttributeGroups);
+        const productAttributeTerms = ensureArray<any>(modulePayload.productAttributeTerms);
         const options = ensureArray<any>(modulePayload.options);
         const optionValues = ensureArray<any>(modulePayload.optionValues);
         const variants = ensureArray<any>(modulePayload.variants);
+
+        const productTypeIdBySlug = new Map<string, Id<"productTypes">>();
+        for (const productType of productTypes) {
+          if (!productType.slug) {continue;}
+          const existing = await ctx.db.query("productTypes").withIndex("by_slug", (q) => q.eq("slug", productType.slug)).unique();
+          const payloadRow = { ...productType };
+          if (existing) {
+            await ctx.db.patch(existing._id, payloadRow);
+            updated += 1;
+            productTypeIdBySlug.set(productType.slug, existing._id);
+          } else {
+            const inserted = await ctx.db.insert("productTypes", payloadRow);
+            created += 1;
+            productTypeIdBySlug.set(productType.slug, inserted);
+          }
+        }
+
+        for (const mapping of productCategoryTypes) {
+          const categoryId = categoryIdBySlug.get(mapping.categorySlug);
+          const typeId = productTypeIdBySlug.get(mapping.typeSlug);
+          if (!categoryId || !typeId) {continue;}
+          const existing = await ctx.db
+            .query("productCategoryTypes")
+            .withIndex("by_category_type", (q) => q.eq("categoryId", categoryId as Id<"productCategories">).eq("typeId", typeId))
+            .unique();
+          if (!existing) {
+            await ctx.db.insert("productCategoryTypes", { categoryId: categoryId as Id<"productCategories">, typeId });
+            created += 1;
+          }
+        }
+
+        const attributeGroupIdBySlug = new Map<string, Id<"attributeGroups">>();
+        for (const group of attributeGroups) {
+          if (!group.slug) {continue;}
+          const existing = await ctx.db.query("attributeGroups").withIndex("by_slug", (q) => q.eq("slug", group.slug)).unique();
+          const payloadRow = { ...group };
+          if (existing) {
+            await ctx.db.patch(existing._id, payloadRow);
+            updated += 1;
+            attributeGroupIdBySlug.set(group.slug, existing._id);
+          } else {
+            const inserted = await ctx.db.insert("attributeGroups", payloadRow);
+            created += 1;
+            attributeGroupIdBySlug.set(group.slug, inserted);
+          }
+        }
+
+        const attributeTermIdByKey = new Map<string, Id<"attributeTerms">>();
+        for (const term of attributeTerms) {
+          const groupId = attributeGroupIdBySlug.get(term.groupSlug);
+          if (!groupId || !term.slug) {continue;}
+          const existingCandidates = await ctx.db
+            .query("attributeTerms")
+            .withIndex("by_group", (q) => q.eq("groupId", groupId))
+            .collect();
+          const existing = existingCandidates.find((item) => item.slug === term.slug);
+          const payloadRow = {
+            ...term,
+            groupId,
+          } as any;
+          delete payloadRow.groupSlug;
+          if (existing) {
+            await ctx.db.patch(existing._id, payloadRow);
+            updated += 1;
+            attributeTermIdByKey.set(`${term.groupSlug}:${term.slug}`, existing._id);
+          } else {
+            const inserted = await ctx.db.insert("attributeTerms", payloadRow);
+            created += 1;
+            attributeTermIdByKey.set(`${term.groupSlug}:${term.slug}`, inserted);
+          }
+        }
+
+        for (const mapping of productTypeAttributeGroups) {
+          const typeId = productTypeIdBySlug.get(mapping.typeSlug);
+          const groupId = attributeGroupIdBySlug.get(mapping.groupSlug);
+          if (!typeId || !groupId) {continue;}
+          const existingCandidates = await ctx.db
+            .query("productTypeAttributeGroups")
+            .withIndex("by_type", (q) => q.eq("typeId", typeId))
+            .collect();
+          const existing = existingCandidates.find((item) => item.groupId === groupId);
+          if (existing) {
+            await ctx.db.patch(existing._id, { order: mapping.order ?? existing.order });
+            updated += 1;
+          } else {
+            await ctx.db.insert("productTypeAttributeGroups", {
+              groupId,
+              order: mapping.order ?? 0,
+              typeId,
+            });
+            created += 1;
+          }
+        }
 
         const optionIdBySlug = new Map<string, Id<"productOptions">>();
         for (const option of options) {
@@ -1098,6 +1309,9 @@ export const importBundle = mutation({
           const existingBySku = await ctx.db.query("products").withIndex("by_sku", (q) => q.eq("sku", product.sku)).unique();
           const existingBySlug = await ctx.db.query("products").withIndex("by_slug", (q) => q.eq("slug", product.slug)).unique();
           const existing = existingBySku ?? existingBySlug;
+          const productTypeId = product.productTypeSlug
+            ? productTypeIdBySlug.get(product.productTypeSlug)
+            : undefined;
 
           const payloadRow: Record<string, unknown> = {
             affiliateLink: product.affiliateLink,
@@ -1105,6 +1319,7 @@ export const importBundle = mutation({
             description: product.description,
             digitalCredentialsTemplate: rewriteByUrlMap(product.digitalCredentialsTemplate, mediaMap),
             digitalDeliveryType: product.digitalDeliveryType,
+            effectivePrice: product.effectivePrice,
             hasVariants: product.hasVariants,
             image: rewriteByUrlMap(product.image, mediaMap),
             images: rewriteByUrlMap(product.images ?? [], mediaMap),
@@ -1119,6 +1334,7 @@ export const importBundle = mutation({
             order: product.order,
             price: product.price,
             productType: product.productType,
+            productTypeId,
             renderType: product.renderType,
             salePrice: product.salePrice,
             sku: product.sku,
@@ -1136,6 +1352,30 @@ export const importBundle = mutation({
             const inserted = await ctx.db.insert("products", payloadRow as any);
             created += 1;
             productIdBySku.set(product.sku, inserted);
+          }
+        }
+
+        for (const assignment of productAttributeTerms) {
+          const productId = productIdBySku.get(assignment.productSku);
+          const termId = attributeTermIdByKey.get(`${assignment.groupSlug}:${assignment.termSlug}`);
+          if (!productId || !termId) {continue;}
+          const existingCandidates = await ctx.db
+            .query("productAttributeTerms")
+            .withIndex("by_product", (q) => q.eq("productId", productId))
+            .collect();
+          const existing = existingCandidates.find((item) => item.termId === termId);
+          const payloadRow = {
+            extra: assignment.extra,
+            order: assignment.order ?? 0,
+            productId,
+            termId,
+          };
+          if (existing) {
+            await ctx.db.patch(existing._id, payloadRow);
+            updated += 1;
+          } else {
+            await ctx.db.insert("productAttributeTerms", payloadRow);
+            created += 1;
           }
         }
 

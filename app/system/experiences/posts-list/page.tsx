@@ -38,6 +38,7 @@ type PostsListExperienceConfig = {
   hideEmptyCategories: boolean;
   paginationType: PaginationType;
   postsPerPage: number;
+  showContextIntro: boolean;
 };
 
 const EXPERIENCE_KEY = 'posts_list_ui';
@@ -56,6 +57,7 @@ const DEFAULT_CONFIG: PostsListExperienceConfig = {
   hideEmptyCategories: true,
   paginationType: 'pagination',
   postsPerPage: 12,
+  showContextIntro: true,
 };
 
 const HINTS = [
@@ -100,6 +102,7 @@ export default function PostsListExperiencePage() {
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       paginationType: normalizePaginationType(raw?.paginationType),
       postsPerPage: raw?.postsPerPage ?? 12,
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 

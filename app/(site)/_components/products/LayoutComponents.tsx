@@ -134,6 +134,7 @@ interface LayoutProps {
   showCategories?: boolean;
   priceFilterMode?: 'disabled' | 'custom' | 'smart_dropdown' | 'slider';
   gridColumns?: number;
+  contextIntroNode?: React.ReactNode;
 }
 
 function CategoryTreeLabel({ category, compact = false }: { category: CategoryDisplayItem; compact?: boolean }) {
@@ -443,7 +444,8 @@ export function CatalogLayout({
   showSearch = true,
   showCategories = true,
   priceFilterMode = 'custom',
-  gridColumns
+  gridColumns,
+  contextIntroNode
 }: LayoutProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState('');
@@ -517,6 +519,7 @@ export function CatalogLayout({
           descriptionColor={tokens.bodyText}
           centered={true}
         />
+        {contextIntroNode}
 
         <div className="flex flex-col lg:flex-row gap-6 md:gap-8 mt-6 md:mt-8">
           {/* Sidebar Filters - Desktop */}
@@ -1285,7 +1288,8 @@ export function ListLayout({
   cartButtonsLayout,
   showSearch = true,
   showCategories = true,
-  priceFilterMode: _priceFilterMode = 'custom'
+  priceFilterMode: _priceFilterMode = 'custom',
+  contextIntroNode
 }: LayoutProps) {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
@@ -1331,6 +1335,7 @@ export function ListLayout({
           descriptionColor={tokens.bodyText}
           centered={true}
         />
+        {contextIntroNode}
 
         {/* Mobile Filters Controls */}
         <MobileProductsFilters

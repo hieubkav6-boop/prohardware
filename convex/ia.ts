@@ -229,7 +229,23 @@ export const listConflicts = query({
     slug: v.string(),
     reserved: v.boolean(),
     items: v.array(v.object({
-      id: v.union(v.id("posts"), v.id("products"), v.id("services"), v.id("courses"), v.id("projects"), v.id("resources"), v.id("postCategories"), v.id("productCategories"), v.id("serviceCategories"), v.id("courseCategories"), v.id("projectCategories"), v.id("resourceCategories")),
+      id: v.union(
+        v.id("posts"),
+        v.id("products"),
+        v.id("services"),
+        v.id("courses"),
+        v.id("projects"),
+        v.id("resources"),
+        v.id("postCategories"),
+        v.id("productCategories"),
+        v.id("serviceCategories"),
+        v.id("courseCategories"),
+        v.id("projectCategories"),
+        v.id("resourceCategories"),
+        v.id("productTypes"),
+        v.id("attributeGroups"),
+        v.id("attributeTerms")
+      ),
       label: v.string(),
       table: v.union(
         v.literal("posts"),
@@ -243,7 +259,10 @@ export const listConflicts = query({
         v.literal("serviceCategories"),
         v.literal("courseCategories"),
         v.literal("projectCategories"),
-        v.literal("resourceCategories")
+        v.literal("resourceCategories"),
+        v.literal("productTypes"),
+        v.literal("attributeGroups"),
+        v.literal("attributeTerms")
       ),
     })),
   })),

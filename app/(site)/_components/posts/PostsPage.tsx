@@ -12,6 +12,7 @@ import { usePostsListConfig } from '@/lib/experiences';
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { type SortOption } from '@/components/site/posts';
+import { ListContextIntro } from '@/components/shared/ListContextIntro';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
 import { StorefrontCard } from '@/components/shared/StorefrontCard';
 import { Eye, FileText } from 'lucide-react';
@@ -599,7 +600,16 @@ function PostsContent() {
     </>
   );
 
-  const activeCategoryName = activeCategory && categoryMap ? categoryMap.get(activeCategory as any) : null;
+  const activeCategoryDoc = activeCategory && categories
+    ? categories.find((category) => category._id === activeCategory) ?? null
+    : null;
+  const activeCategoryName = activeCategoryDoc?.name ?? null;
+  const sortContextValue = sortBy === 'newest' ? null : ({
+    oldest: 'Cũ nhất',
+    popular: 'Xem nhiều nhất',
+    title: 'Theo tên A-Z',
+    title_desc: 'Theo tên Z-A',
+  } as Partial<Record<SortOption, string>>)[sortBy];
 
   return (
     <div className="flex-1 w-full font-active">
@@ -713,7 +723,21 @@ function PostsContent() {
         paginationNode={paginationBar}
         infiniteScrollTriggerNode={infiniteScrollTrigger}
         headerTitle={activeCategoryName ?? 'Tin tức & Bài viết'}
-        headerDescription={activeCategory && categories ? categories.find(c => c._id === activeCategory)?.description : undefined}
+        headerDescription={activeCategoryDoc?.description}
+        contextIntroNode={(
+          <ListContextIntro
+            enabled={listConfig.showContextIntro}
+            items={[
+              { label: 'Tìm', value: searchQuery.trim() || debouncedSearchQuery.trim() || null },
+              { label: 'Danh mục', value: activeCategoryName },
+              { label: 'Sắp xếp', value: sortContextValue },
+            ]}
+            totalCount={totalCount}
+            unit="bài viết"
+            accentColor={brandColor}
+            isDark={isDark}
+          />
+        )}
         brandColor={brandColor}
         isDark={isDark}
       />

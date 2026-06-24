@@ -35,6 +35,7 @@ type CoursesListExperienceConfig = {
   paginationType: PaginationType;
   postsPerPage: number;
   cornerRadius: 'none' | 'sm' | 'lg';
+  showContextIntro: boolean;
 };
 
 const EXPERIENCE_KEY = 'courses_list_ui';
@@ -55,6 +56,7 @@ const DEFAULT_CONFIG: CoursesListExperienceConfig = {
   paginationType: 'pagination',
   postsPerPage: 12,
   cornerRadius: 'lg',
+  showContextIntro: true,
 };
 
 const HINTS = [
@@ -107,6 +109,7 @@ export default function CoursesListExperiencePage() {
       paginationType: normalizePaginationType(legacyLayout?.paginationType ?? raw?.paginationType),
       postsPerPage: legacyLayout?.postsPerPage ?? raw?.postsPerPage ?? 12,
       cornerRadius: raw?.cornerRadius ?? 'lg',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 

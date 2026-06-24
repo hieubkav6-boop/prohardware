@@ -9,10 +9,11 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { Loader2, GripVertical, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
-import { Badge, Button, Card, CardContent, Input, Label, cn } from '../../../components/ui';
+import { Badge, Button, Card, CardContent, Input, Label, cn, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui';
 import { CopyableInput } from '../../../components/CopyTextButton';
 import { IconPopoverPicker } from '../../../home-components/_shared/components/IconPopoverPicker';
 import { ATTRIBUTE_ICON_OPTIONS } from '../../_lib/iconRegistry';
+import { LexicalEditor } from '@/app/admin/components/LexicalEditor';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -443,16 +444,18 @@ interface SortableTermRowProps {
     _id: Id<"attributeTerms">;
     name: string;
     slug: string;
+    description?: string;
     order: number;
   };
   checked: boolean;
   onToggle: (id: Id<"attributeTerms">) => void;
   onRemove: (id: Id<"attributeTerms">) => void;
+  onEdit: (term: any) => void;
   groupSlug: string;
   assignedTypeSlug: string | null;
 }
 
-function SortableTermRow({ term, checked, onToggle, onRemove, groupSlug, assignedTypeSlug }: SortableTermRowProps) {
+function SortableTermRow({ term, checked, onToggle, onRemove, onEdit, groupSlug, assignedTypeSlug }: SortableTermRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: term._id });
   const style = { transform: CSS.Transform.toString(transform), transition };
 
@@ -490,6 +493,14 @@ function SortableTermRow({ term, checked, onToggle, onRemove, groupSlug, assigne
           variant="ghost" 
           size="sm" 
           className="text-orange-600 hover:text-orange-700 flex items-center gap-1"
+          onClick={() => onEdit(term)}
+        >
+          Sửa
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-orange-600 hover:text-orange-700 flex items-center gap-1"
           onClick={() => {
             const baseSlug = assignedTypeSlug || 'products';
             const url = `/${baseSlug}/${groupSlug}/${term.slug}`;
@@ -508,11 +519,33 @@ function AttributeTermsManager({ groupId, terms, groupSlug, assignedTypeSlug }: 
   const createTerm = useMutation(api.attributeTerms.create);
   const removeTerm = useMutation(api.attributeTerms.remove);
   const reorderTerms = useMutation(api.attributeTerms.reorder);
+  const updateTerm = useMutation(api.attributeTerms.update);
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTermIds, setSelectedTermIds] = useState<Id<"attributeTerms">[]>([]);
+
+  // Editing state
+  const [editingTerm, setEditingTerm] = useState<any>(null);
+  const [editName, setEditName] = useState('');
+  const [editSlug, setEditSlug] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleStartEdit = (term: any) => {
+    setEditingTerm(term);
+    setEditName(term.name);
+    setEditSlug(term.slug);
+    setEditDescription(term.description ?? '');
+  };
+
+  const handleCloseEdit = () => {
+    setEditingTerm(null);
+    setEditName('');
+    setEditSlug('');
+    setEditDescription('');
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -558,6 +591,26 @@ function AttributeTermsManager({ groupId, terms, groupSlug, assignedTypeSlug }: 
       toast.success('Đã xóa giá trị thuộc tính');
     } catch (error) {
       toast.error(getAdminMutationErrorMessage(error, 'Lỗi khi xóa giá trị thuộc tính'));
+    }
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTerm || !editName.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      await updateTerm({
+        id: editingTerm._id,
+        name: editName.trim(),
+        slug: editSlug.trim(),
+        description: editDescription.trim(),
+      });
+      toast.success('Đã cập nhật giá trị thuộc tính');
+      handleCloseEdit();
+    } catch (error) {
+      toast.error(getAdminMutationErrorMessage(error, 'Lỗi khi cập nhật giá trị thuộc tính'));
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -664,6 +717,7 @@ function AttributeTermsManager({ groupId, terms, groupSlug, assignedTypeSlug }: 
                     checked={selectedTermIds.includes(term._id)}
                     onToggle={toggleSelectedTerm}
                     onRemove={handleRemove}
+                    onEdit={handleStartEdit}
                     groupSlug={groupSlug}
                     assignedTypeSlug={assignedTypeSlug}
                   />
@@ -673,6 +727,64 @@ function AttributeTermsManager({ groupId, terms, groupSlug, assignedTypeSlug }: 
           </SortableContext>
         </DndContext>
       </CardContent>
+
+      {editingTerm && (
+        <Dialog open={editingTerm !== null} onOpenChange={(open) => { if (!open) handleCloseEdit(); }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6">
+            <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <DialogTitle>Chỉnh sửa giá trị thuộc tính: {editingTerm.name}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2 py-4 scrollbar-thin">
+                <div className="space-y-1">
+                  <Label>Tên giá trị</Label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => {
+                      setEditName(e.target.value);
+                      const generatedSlug = e.target.value.toLowerCase()
+                        .normalize("NFD").replaceAll(/[\u0300-\u036F]/g, "")
+                        .replaceAll(/[đĐ]/g, "d")
+                        .replaceAll(/[^a-z0-9\s]/g, '')
+                        .replaceAll(/\s+/g, '-');
+                      setEditSlug(generatedSlug);
+                    }}
+                    required
+                    placeholder="VD: Đỏ, XL..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Slug</Label>
+                  <Input
+                    value={editSlug}
+                    onChange={(e) => setEditSlug(e.target.value)}
+                    placeholder="do, xl..."
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-semibold block">Mô tả (Lexical)</Label>
+                  <LexicalEditor
+                    key={`${editingTerm._id}:description`}
+                    resetKey={`${editingTerm._id}:description`}
+                    onChange={setEditDescription}
+                    initialContent={editDescription}
+                  />
+                </div>
+              </div>
+              <DialogFooter className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <Button type="button" variant="ghost" onClick={handleCloseEdit} disabled={isSavingEdit}>
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={isSavingEdit}>
+                  {isSavingEdit ? <Loader2 size={16} className="animate-spin mr-1" /> : null}
+                  Lưu thay đổi
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }

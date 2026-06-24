@@ -1,6 +1,12 @@
 export { useExperienceConfig } from './useExperienceConfig';
 export { useExperienceSave } from './useExperienceSave';
 export {
+  buildListContextIntro,
+  useListContextIntro,
+  type ListContextIntroItem,
+  type ListContextIntroResult,
+} from './useListContextIntro';
+export {
   EXPERIENCE_COLORS,
   EXPERIENCE_GROUP,
   EXPERIENCE_NAMES,

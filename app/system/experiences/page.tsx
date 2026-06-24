@@ -237,6 +237,7 @@ export default function ExperiencesPage() {
   const [localDarkModePremiumBorder, setLocalDarkModePremiumBorder] = useState<Record<string, boolean>>({});
   const [localShowDetailButton, setLocalShowDetailButton] = useState<Record<string, boolean>>({});
   const [localDetailButtonText, setLocalDetailButtonText] = useState<Record<string, string>>({});
+  const [localShowContextIntro, setLocalShowContextIntro] = useState<Record<string, boolean>>({});
   const [isInitialized, setIsInitialized] = useState(false);
   const snapshotPayload = snapshot?.payload as HomepageSnapshotPayload | undefined;
   const snapshotDarkMode = getSnapshotDarkModeValue(snapshotPayload);
@@ -303,6 +304,14 @@ export default function ExperiencesPage() {
         projects: (projectsSetting?.value as any)?.detailButtonText ?? 'Xem dự án',
         products: (productsSetting?.value as any)?.detailButtonText ?? 'Xem sản phẩm',
       });
+      setLocalShowContextIntro({
+        posts: (postsSetting?.value as any)?.showContextIntro ?? true,
+        resources: (resourcesSetting?.value as any)?.showContextIntro ?? true,
+        courses: (coursesSetting?.value as any)?.showContextIntro ?? true,
+        services: (servicesSetting?.value as any)?.showContextIntro ?? true,
+        projects: (projectsSetting?.value as any)?.showContextIntro ?? true,
+        products: (productsSetting?.value as any)?.showContextIntro ?? true,
+      });
       setIsInitialized(true);
     }
   }, [isLoaded, isInitialized, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting, isSnapshotDarkModeEditing, snapshotDarkMode]);
@@ -347,9 +356,15 @@ export default function ExperiencesPage() {
       localDetailButtonText.services !== ((servicesSetting?.value as any)?.detailButtonText ?? 'Xem dịch vụ') ||
       localDetailButtonText.projects !== ((projectsSetting?.value as any)?.detailButtonText ?? 'Xem dự án') ||
       localDetailButtonText.products !== ((productsSetting?.value as any)?.detailButtonText ?? 'Xem sản phẩm') ||
+      localShowContextIntro.posts !== ((postsSetting?.value as any)?.showContextIntro ?? true) ||
+      localShowContextIntro.resources !== ((resourcesSetting?.value as any)?.showContextIntro ?? true) ||
+      localShowContextIntro.courses !== ((coursesSetting?.value as any)?.showContextIntro ?? true) ||
+      localShowContextIntro.services !== ((servicesSetting?.value as any)?.showContextIntro ?? true) ||
+      localShowContextIntro.projects !== ((projectsSetting?.value as any)?.showContextIntro ?? true) ||
+      localShowContextIntro.products !== ((productsSetting?.value as any)?.showContextIntro ?? true) ||
       localDarkMode !== (isSnapshotDarkModeEditing ? snapshotDarkMode : normalizeDarkModeValue(darkModeSetting?.value))
     );
-  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, localDarkModePremiumBorder, localShowDetailButton, localDetailButtonText, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting, isSnapshotDarkModeEditing, snapshotDarkMode]);
+  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, localDarkModePremiumBorder, localShowDetailButton, localDetailButtonText, localShowContextIntro, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting, isSnapshotDarkModeEditing, snapshotDarkMode]);
 
   const [isSaving, setIsSaving] = useState(false);
   const handleSaveAll = async () => {
@@ -382,6 +397,7 @@ export default function ExperiencesPage() {
             darkModePremiumBorder: localDarkModePremiumBorder.posts,
             showDetailButton: localShowDetailButton.posts,
             detailButtonText: localDetailButtonText.posts,
+            showContextIntro: localShowContextIntro.posts,
           }
         },
         {
@@ -395,6 +411,7 @@ export default function ExperiencesPage() {
             darkModePremiumBorder: localDarkModePremiumBorder.resources,
             showDetailButton: localShowDetailButton.resources,
             detailButtonText: localDetailButtonText.resources,
+            showContextIntro: localShowContextIntro.resources,
           }
         },
         {
@@ -408,6 +425,7 @@ export default function ExperiencesPage() {
             darkModePremiumBorder: localDarkModePremiumBorder.courses,
             showDetailButton: localShowDetailButton.courses,
             detailButtonText: localDetailButtonText.courses,
+            showContextIntro: localShowContextIntro.courses,
           }
         },
         {
@@ -421,6 +439,7 @@ export default function ExperiencesPage() {
             darkModePremiumBorder: localDarkModePremiumBorder.services,
             showDetailButton: localShowDetailButton.services,
             detailButtonText: localDetailButtonText.services,
+            showContextIntro: localShowContextIntro.services,
           }
         },
         {
@@ -434,6 +453,7 @@ export default function ExperiencesPage() {
             darkModePremiumBorder: localDarkModePremiumBorder.projects,
             showDetailButton: localShowDetailButton.projects,
             detailButtonText: localDetailButtonText.projects,
+            showContextIntro: localShowContextIntro.projects,
           }
         },
         {
@@ -448,6 +468,7 @@ export default function ExperiencesPage() {
             darkModePremiumBorder: localDarkModePremiumBorder.products,
             showDetailButton: localShowDetailButton.products,
             detailButtonText: localDetailButtonText.products,
+            showContextIntro: localShowContextIntro.products,
           }
         },
         {
@@ -526,6 +547,18 @@ export default function ExperiencesPage() {
       products: value,
     });
     toast.success(`Đã ${value ? 'bật' : 'tắt'} nút xem chi tiết cho tất cả danh sách. Nhớ bấm Lưu!`);
+  };
+
+  const handleApplyAllContextIntro = (value: boolean) => {
+    setLocalShowContextIntro({
+      posts: value,
+      resources: value,
+      courses: value,
+      services: value,
+      projects: value,
+      products: value,
+    });
+    toast.success(`Đã ${value ? 'bật' : 'tắt'} chip ngữ cảnh lọc cho tất cả danh sách. Nhớ bấm Lưu!`);
   };
 
   // Debounce
@@ -943,6 +976,39 @@ export default function ExperiencesPage() {
                 </div>
               </div>
 
+              {/* Quick Context Intro */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200/40 dark:border-zinc-800/40">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <span className="w-1.5 h-4 rounded-full bg-cyan-500 inline-block" />
+                    Đồng bộ nhanh Chip ngữ cảnh lọc
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-lg">
+                    Hiển thị chip gọn cho nhóm, danh mục, giá, tìm kiếm và bộ lọc đang áp dụng.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2.5 items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllContextIntro(true)}
+                    className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    <FileText size={13} />
+                    Bật tất cả
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllContextIntro(false)}
+                    className="text-xs font-semibold hover:border-slate-400/50 hover:bg-slate-100 hover:text-slate-600 transition-all gap-1.5"
+                  >
+                    <X size={13} />
+                    Tắt tất cả
+                  </Button>
+                </div>
+              </div>
+
               {/* Quick Detail Button */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -1012,6 +1078,7 @@ export default function ExperiencesPage() {
                   const currentLayout = localLayouts[item.id] || 'grid';
                   const currentGridColumns = localGridColumns[item.id] || 3;
                   const currentPremiumBorder = localDarkModePremiumBorder[item.id] ?? false;
+                  const currentContextIntro = localShowContextIntro[item.id] ?? true;
                   
                   return (
                     <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors">
@@ -1094,6 +1161,26 @@ export default function ExperiencesPage() {
                               <span
                                 className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                                   currentPremiumBorder ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Chip ngữ cảnh lọc */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Ngữ cảnh</span>
+                          <div className="flex items-center h-9">
+                            <button
+                              type="button"
+                              onClick={() => setLocalShowContextIntro(prev => ({ ...prev, [item.id]: !(prev[item.id] ?? true) }))}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                currentContextIntro ? 'bg-cyan-500' : 'bg-slate-200 dark:bg-slate-800'
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  currentContextIntro ? 'translate-x-4' : 'translate-x-0'
                                 }`}
                               />
                             </button>

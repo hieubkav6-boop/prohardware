@@ -42,6 +42,7 @@ type ProjectsListExperienceConfig = {
   postsPerPage: number;
   showClientName: boolean;
   showIntroVideo: boolean;
+  showContextIntro: boolean;
 };
 
 const EXPERIENCE_KEY = 'projects_list_ui';
@@ -62,6 +63,7 @@ const DEFAULT_CONFIG: ProjectsListExperienceConfig = {
   showCategories: true,
   showClientName: true,
   showIntroVideo: true,
+  showContextIntro: true,
   showSearch: true,
 };
 

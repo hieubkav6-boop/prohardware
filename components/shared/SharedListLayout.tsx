@@ -48,6 +48,7 @@ export interface SharedListLayoutProps<T> {
   // Tùy biến tiêu đề trang (Page Header)
   headerTitle?: string;
   headerDescription?: string;
+  contextIntroNode?: React.ReactNode;
   brandColor?: string; // Dùng cho các nút và trạng thái active
   isDark?: boolean;
 }
@@ -89,6 +90,7 @@ export function SharedListLayout<T>({
   infiniteScrollTriggerNode,
   headerTitle,
   headerDescription,
+  contextIntroNode,
   brandColor = '#3b82f6',
   isDark = false,
 }: SharedListLayoutProps<T>) {
@@ -142,6 +144,8 @@ export function SharedListLayout<T>({
             centered={true}
           />
         )}
+
+        {contextIntroNode}
 
         {/* Mobile Toolbar */}
         <div className={`flex lg:hidden flex-col sm:flex-row gap-3 p-3 mb-5 border border-slate-200 bg-white dark:border-zinc-800 dark:bg-[#161617] ${radiusClass}`}>

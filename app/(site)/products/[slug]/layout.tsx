@@ -88,6 +88,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         });
       }
 
+      if (resolvedContext && resolvedContext.type === 'productTypeCategory') {
+        return buildSeoMetadata({
+          contact,
+          descriptionOverride: resolvedContext.categoryDescription || seo.seo_description,
+          pathname: `/products/${slug}`,
+          routeType: 'list',
+          seo,
+          site,
+          social,
+          titleOverride: `${resolvedContext.categoryName} - ${resolvedContext.productTypeSlug.toUpperCase()}`,
+          useTitleTemplate: true,
+        });
+      }
+
+      if (resolvedContext && resolvedContext.type === 'productTypePriceRange') {
+        return buildSeoMetadata({
+          contact,
+          descriptionOverride: seo.seo_description,
+          pathname: `/products/${slug}`,
+          routeType: 'list',
+          seo,
+          site,
+          social,
+          titleOverride: `${resolvedContext.priceRange.label} - ${resolvedContext.productTypeSlug.toUpperCase()}`,
+          useTitleTemplate: true,
+        });
+      }
+
       return buildSeoMetadata({
         contact,
         descriptionOverride: 'Sản phẩm này không tồn tại hoặc đã bị xóa.',

@@ -40,6 +40,7 @@ type ServicesListExperienceConfig = {
     list: LayoutConfig;
   };
   hideEmptyCategories: boolean;
+  showContextIntro: boolean;
 };
 
 type LayoutConfig = {
@@ -73,6 +74,7 @@ const DEFAULT_CONFIG: ServicesListExperienceConfig = {
     list: { ...DEFAULT_LAYOUT_CONFIG },
   },
   hideEmptyCategories: true,
+  showContextIntro: true,
 };
 
 const HINTS = [
@@ -122,6 +124,7 @@ export default function ServicesListExperiencePage() {
         list: normalizeLayoutConfig((raw?.layouts as any)?.list ?? (raw?.layouts as any)?.masonry),
       },
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 

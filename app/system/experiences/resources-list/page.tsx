@@ -35,6 +35,7 @@ type ResourcesListExperienceConfig = {
   paginationType: PaginationType;
   postsPerPage: number;
   cornerRadius: 'none' | 'sm' | 'lg';
+  showContextIntro: boolean;
 };
 
 const EXPERIENCE_KEY = 'resources_list_ui';
@@ -55,6 +56,7 @@ const DEFAULT_CONFIG: ResourcesListExperienceConfig = {
   paginationType: 'pagination',
   postsPerPage: 12,
   cornerRadius: 'lg',
+  showContextIntro: true,
 };
 
 const normalizeLayoutStyle = (value?: string): ListLayoutStyle => {
@@ -100,6 +102,7 @@ export default function ResourcesListExperiencePage() {
       paginationType: normalizePaginationType(legacyLayout?.paginationType ?? raw?.paginationType),
       postsPerPage: legacyLayout?.postsPerPage ?? raw?.postsPerPage ?? 12,
       cornerRadius: raw?.cornerRadius ?? 'lg',
+      showContextIntro: raw?.showContextIntro ?? true,
     };
   }, [experienceSetting?.value]);
 

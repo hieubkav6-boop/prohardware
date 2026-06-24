@@ -7,7 +7,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { revalidateSeoPaths } from '@/app/actions/seo-revalidate';
+import { revalidateSeoPaths, revalidateSiteLayout } from '@/app/actions/seo-revalidate';
 import { Button, Card, CardContent, CardHeader, CardTitle, Checkbox, Input, Label, cn } from '../../components/ui';
 import { ModuleGuard } from '../../components/ModuleGuard';
 import { SettingsImageUploader } from '../../components/SettingsImageUploader';
@@ -867,6 +867,13 @@ function SettingsContent({ section }: { section: SettingsSection }) {
           });
         }
       });
+      if (!settingsToSave.some((item) => item.key === 'enable_product_frames')) {
+        settingsToSave.push({
+          group: 'advanced',
+          key: 'enable_product_frames',
+          value: form.enable_product_frames === true || form.enable_product_frames === 'true',
+        });
+      }
       // Save watermark settings
       const watermarkKeys = [
         'enable_product_watermark',
@@ -944,6 +951,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
       const hasSiteUrlChanged = form.site_url !== initialForm.site_url;
       await setMultiple({ settings: settingsToSave });
+      void revalidateSiteLayout().catch((err) => {
+        console.error('Failed to revalidate site layout:', err);
+      });
       if (hasSiteUrlChanged) {
         void revalidateSeoPaths().catch(() => {
           toast.warning('Đã lưu, đồng bộ SEO đang chậm.');

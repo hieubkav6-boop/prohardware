@@ -29,5 +29,23 @@ export default async function LegacyProductDetailPage({ params }: PageProps) {
     );
   }
 
+  if (resolvedContext && resolvedContext.type === 'productTypeCategory') {
+    return (
+      <ProductsPage
+        productTypeId={resolvedContext.productTypeId}
+        categoryId={resolvedContext.categoryId}
+      />
+    );
+  }
+
+  if (resolvedContext && resolvedContext.type === 'productTypePriceRange') {
+    return (
+      <ProductsPage
+        productTypeId={resolvedContext.productTypeId}
+        priceRangeFilter={resolvedContext.priceRange}
+      />
+    );
+  }
+
   return <ProductDetailPageShared params={params} />;
 }

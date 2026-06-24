@@ -18,6 +18,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { getProductImageAspectRatioCssValue } from '@/lib/products/image-aspect-ratio';
 import { RichContent } from '@/components/common/RichContent';
 import { toRichTextContent } from '@/lib/products/product-supplemental-content';
+import { ListContextIntro } from '@/components/shared/ListContextIntro';
 import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
 import {
   PRODUCT_CONTACT_SALE_LINK_SETTING_KEYS,
@@ -491,6 +492,72 @@ function ProductsContent(props: ProductsPageProps) {
     search: debouncedSearchQuery || undefined,
     attributeTermIds,
   });
+
+  const activeAttributeContextItems = useMemo(() => {
+    if (!displayFilterableGroups) return [];
+    return displayFilterableGroups.flatMap((group) => {
+      const selectedTermSlugs = selectedAttributes[group._id] ?? [];
+      if (selectedTermSlugs.length === 0) return [];
+      const selectedSlugSet = new Set(selectedTermSlugs);
+      const value = (group.terms ?? [])
+        .filter((term: { slug: string }) => selectedSlugSet.has(term.slug))
+        .map((term: { name: string }) => term.name)
+        .join(', ');
+      return value ? [{ label: group.name, value }] : [];
+    });
+  }, [displayFilterableGroups, selectedAttributes]);
+
+  const priceContextValue = useMemo(() => {
+    const minPriceParam = searchParams.get('minPrice');
+    const maxPriceParam = searchParams.get('maxPrice');
+    if (!minPriceParam && !maxPriceParam) return selectedPriceRange?.label ?? null;
+
+    const formatPriceValue = (value: string) => {
+      const numericValue = Number(value);
+      if (!Number.isFinite(numericValue)) return value;
+      return `${numericValue.toLocaleString('vi-VN')}đ`;
+    };
+
+    if (minPriceParam && maxPriceParam) {
+      return `${formatPriceValue(minPriceParam)} - ${formatPriceValue(maxPriceParam)}`;
+    }
+    if (minPriceParam) return `Từ ${formatPriceValue(minPriceParam)}`;
+    return `Đến ${formatPriceValue(maxPriceParam!)}`;
+  }, [searchParams, selectedPriceRange?.label]);
+
+  const sortContextValue = useMemo(() => {
+    if (sortBy === 'newest') return null;
+    const labels: Record<ProductSortOption, string> = {
+      newest: 'Mới nhất',
+      oldest: 'Cũ nhất',
+      popular: 'Bán chạy',
+      price_asc: 'Giá thấp → cao',
+      price_desc: 'Giá cao → thấp',
+      name: 'Tên A-Z',
+      name_desc: 'Tên Z-A',
+    };
+    return labels[sortBy];
+  }, [sortBy]);
+
+  const contextIntroItems = useMemo(() => [
+    { label: 'Tìm', value: searchQuery.trim() || debouncedSearchQuery.trim() || null },
+    { label: 'Nhóm', value: enableProductTypes ? productType?.name : null },
+    { label: 'Danh mục', value: activeCategoryDoc?.name ?? null },
+    { label: 'Giá', value: priceContextValue },
+    { label: 'Sắp xếp', value: sortContextValue },
+    ...activeAttributeContextItems,
+  ], [activeAttributeContextItems, activeCategoryDoc?.name, debouncedSearchQuery, enableProductTypes, priceContextValue, productType?.name, searchQuery, sortContextValue]);
+
+  const contextIntroNode = (
+    <ListContextIntro
+      enabled={listConfig.showContextIntro}
+      items={contextIntroItems}
+      totalCount={totalCount}
+      unit="sản phẩm"
+      accentColor={tokens.primary}
+      isDark={isDark}
+    />
+  );
 
   const categoryMap = useMemo(() => {
     if (!categories) {return new Map<string, string>();}
@@ -1174,6 +1241,7 @@ function ProductsContent(props: ProductsPageProps) {
           cartButtonsLayout={listConfig.cartButtonsLayout}
           priceFilterMode={listConfig.priceFilterMode}
           gridColumns={listConfig.gridColumns}
+          contextIntroNode={contextIntroNode}
         />
         {quickAddModal}
       </>
@@ -1241,6 +1309,7 @@ function ProductsContent(props: ProductsPageProps) {
           cartButtonsLayout={listConfig.cartButtonsLayout}
           priceFilterMode={listConfig.priceFilterMode}
           gridColumns={listConfig.gridColumns}
+          contextIntroNode={contextIntroNode}
         />
         {quickAddModal}
       </>
@@ -1284,6 +1353,7 @@ function ProductsContent(props: ProductsPageProps) {
             descriptionColor={tokens.bodyText}
             centered={true}
           />
+          {contextIntroNode}
 
           <MobileProductsFilters
             categories={categoryOptions}
